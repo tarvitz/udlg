@@ -1,0 +1,14 @@
+*.py[co]
+ve[3]
+mount.sh
+__pycache__
+dialogs.json
+/json
+/remote
+/old
+/.idea
+/*.egg-info
+/.cache
+/.tox
+/.coverage
+

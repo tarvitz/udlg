@@ -1,0 +1,2 @@
+pytest==2.8.5
+pytest-allure-adaptor==1.6.8
