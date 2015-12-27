@@ -1,13 +1,13 @@
 UDLG 
 ====
 
-* UDLG is dialogs file format using in `Underrail<http://store.steampowered.com/app/250520/>`_ game.
+* UDLG is dialogs file format using in `Underrail <http://store.steampowered.com/app/250520/>`_ game.
 
 .. contents:: :local:
     :depth: 2
 
 File format templates
-~~~~~~~~~~~~~~~~~~~~~
+---------------------
 File format templates stored inside ``templates`` directory and provides much
 help in investigation udlg file format process.
 Use `010editor <http://www.sweetscape.com/010editor/>`_ to process udlg files
@@ -33,17 +33,17 @@ document build requirements stored in py3.txt
    user@localhost$ pip install -r requirements/py3.txt
 
 Dependencies
-------------
+~~~~~~~~~~~~
 * python 3.4
 * (explore.py uses python3.5)
 
 Tests
-~~~~~
+-----
 There some tests covers utils, helps to maintain python library clean and
 consistence.
 
-Tox
-+++
+Using tox
+~~~~~~~~~
 Using `tox <http://tox.testrun.org/>`_ is recommended way to run tests.
 Just run (you should install tox before run it):
 
@@ -52,7 +52,7 @@ Just run (you should install tox before run it):
   user@localhost udlg$ tox
 
 Scripts
-~~~~~~~
+-------
 There're small amount of scripts now:
 
 - ``explore.py`` - finds all *.udlg inside ``remote/Data/Dialogs`` folder. Please
@@ -68,5 +68,5 @@ could help to access some data.
   differences into output.json file.
 
 Documentation
-~~~~~~~~~~~~~
+-------------
 Not yet ;)
