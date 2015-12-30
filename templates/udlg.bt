@@ -6,70 +6,20 @@
 // Revision: 0.1
 // Purpose: And justice for all
 //--------------------------------------
-
-// Define the file
-typedef struct{
-  byte length;
-  char signature[length];
-} HeaderEntry<optimize=false>;
-
-typedef struct{
-  byte info<comment="some data packed into 1 byte which can be used with header entries. Think it could be some offsets or so">;
-} HeaderEntryInfo;
-
-typedef struct (uint amount){
-    HeaderEntry entries[amount];
-    HeaderEntryInfo entriesInfo[amount]<comment="ome information for each entry">;
-} Entries;
+#include "formatter.bt";
 
 typedef struct {
-    byte length;
-    char signature[length];
-    uint block<comment="length or something">;
-} UnknownEntry<optimize=false, bgcolor=cLtBlue>;
-
-typedef struct {
-  byte zero<comment="offset?">;
-  byte signatureLength<comment="length of the following signature">;
-  char signature[signatureLength]<bgcolor=cLtRed, comment="DM as delimiter?">;
-  uint entryAmount<comment="amount of entries block have">;
-  Entries entries(entryAmount);
-  // UnknownEntry unknownEntry1;
-  byte u<bgcolor=cLtRed>;
-} StartBlock;
+    byte signature[24];
+} UDLGHeader<bgcolor=cLtRed>;
 
 typedef struct{
-   StartBlock startBlock<name="start">;
-} Header;
-
-
-typedef struct {
-    // Header for the file
-    char   fileSignature[16]<bgcolor=cLtGreen>;
-    uint64  identifier<bgcolor=cLtGray>;
-    // last 16 bytes could be structure signature
-    uint64  spaces[3]<bgcolor=cLtGray>;
-    uint    blockIndex;
-    Header     header;
+    UDLGHeader udlgHeader<comment="192 bit, what could it be?">;
+    BinarySerializationFormat record;
+    /*do{
+        Record record;
+        if (FEof())
+            break;
+    } while(record.recordType != MessageEnd);*/
 } UDLG;
 
-local uint tag;
-LittleEndian(); 
-
-    Warning("start reading file");
-// while( !FEof() )
-// {
-    // Read a tag
-    Warning("start reading file");
-    tag = ReadUInt( FTell() );
-    Printf("Tag: %x\n", tag);
-    if( tag == 0x838b53f9 )
-    {
-        UDLG record;
-    }
-    else
-    {
-        Warning( "Unknown UDLG tag encountered. Template stopped." );
-        return -1;
-    }
-//}
+UDLG udlg;

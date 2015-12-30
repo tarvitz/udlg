@@ -6,13 +6,18 @@ UDLG
 .. contents:: :local:
     :depth: 2
 
+File format specs
+-----------------
+Originally udlg uses Microsoft Binary Format Data Structure
+you can know everything you need with
+`specification documentation <https://msdn.microsoft.com/en-us/library/cc236844.aspx>`_
+
 File format templates
 ---------------------
 File format templates stored inside ``templates`` directory and provides much
 help in investigation udlg file format process.
 Use `010editor <http://www.sweetscape.com/010editor/>`_ to process udlg files
 with given templates.
-
 
 Roadmap
 -------

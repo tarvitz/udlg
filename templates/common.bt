@@ -1,0 +1,102 @@
+//--------------------------------------
+//--- 010 Editor v6.0.3 Binary Template
+//
+// File: common.bt
+// Author: Nickolas Fox
+// Revision: 0.1
+// Purpose: for formatter
+//--------------------------------------
+#ifndef _COMMON_H
+#define _COMMON_H
+
+#include "enums.bt";
+#include "types.bt";
+
+typedef struct {
+    PrimitiveTypeEnum type;
+    PrimitiveValue value;
+} ValueWithCode;
+
+typedef struct {
+    PrimitiveTypeEnum type;
+    LengthPrefixedString value;
+} StringValueWithCode;
+
+typedef struct {
+    uint32 length;
+    ValueWithCode values[length];
+} ArrayOfValueWithCode;
+
+typedef struct {
+    uint objectId;
+    uint length;
+} ArrayInfo;
+
+typedef struct {
+    uint32 objectId;
+    LengthPrefixedString name;
+    uint32 membersCount;
+    struct {
+        LengthPrefixedString memberNames[membersCount];
+    } names;
+} ClassInfo<optimize=false>;
+
+typedef struct {
+    LengthPrefixedString typeName;
+    uint32 libraryId;  
+} ClassTypeInfo;
+
+typedef struct{
+    BinaryTypeEnum binaryType;
+} BinaryEnumTypes<read=readBinaryEnumTypes>;
+
+typedef struct (uint count){
+    local uint i = 0;
+    for (i = 0; i < count; i++){
+        BinaryEnumTypes types;
+    }
+    local BinaryTypeEnum type;
+    for (i = 0; i < count; i++){
+        type = types[i].binaryType;
+        if (type == Primitive){
+            PrimitiveTypeEnum additionalInfo;
+        }
+        else if(type == SystemClass){
+            LengthPrefixedString additionalInfo;
+        }
+        else if(type == Class){
+            ClassTypeInfo additionalInfo;
+        }
+        else if(type == PrimitiveArray){
+            PrimitiveTypeEnum additionalInfo;
+        }
+        else {
+            // do nothing
+            struct { local byte nothing; }additionalInfo;
+        }
+    }
+    
+} MemberTypeInfo<optimize=true>;
+
+typedef struct {
+    RecordTypeEnum recordType;
+    ArrayInfo arrayInfo;
+} ArraySingleStringEntry;
+
+typedef struct{
+    RecordTypeEnum recordType;
+    ArrayInfo info;
+    PrimitiveTypeEnum type;
+    PrimitiveValue values(type)[info.length];
+} ArraySinglePrimitiveEntry;
+
+typedef struct {
+    RecordTypeEnum recordType;
+} MessageEndEntry<read=readMessageEndEntry>;
+
+typedef struct{
+    RecordTypeEnum recordType;
+} ObjectNullEntry;
+
+#include "common_utils.bt";
+#endif

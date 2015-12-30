@@ -1,0 +1,93 @@
+//--------------------------------------
+//--- 010 Editor v6.0.3 Binary Template
+//
+// File:
+// Author:
+// Revision:
+// Purpose:
+//--------------------------------------
+#ifndef _TYPES_H
+#define _TYPES_H
+
+#include "enums.bt"
+
+typedef struct {
+    local uint amount, stringSize = Read7BitEncodedInt(amount);
+    ubyte size[amount];
+    char value[stringSize];
+    
+} LengthPrefixedString<optimize=false, read=readLengthPrefixedString>;
+
+string readLengthPrefixedString(LengthPrefixedString& v){
+    string s;
+    if (v.size[0] != 0){
+        SPrintf(s, "%s", v.value);
+    }
+    return s;
+}
+
+
+typedef struct (PrimitiveTypeEnum type){
+    if (type == Boolean){
+        byte value;
+    }
+    else if (type == Byte){
+        ubyte value;
+    }
+    else if (type == Char){
+        char value;
+    }
+    else if (type == Decimal){
+         // original decimal takes 16 bytes
+        byte value[16];
+    }
+    else if (type == Double){
+        double value;
+    }
+    else if (type == Int16){
+        int16 value;
+    }
+    else if (type == Int32){
+        int32 value;
+    }
+    else if (type == Int64){
+        int64 value;
+    }
+    else if (type == SByte){
+        byte value;
+    }
+    else if (type == Single || type == Float){
+        float value;
+    }
+    else if (type == TimeSpan){
+        uint64 value;
+    }
+    else if (type == DateTime){
+        uint64 value;
+    }
+    else if (type == UInt16){
+        uint16 value;
+    }
+    else if (type == UInt32){
+        uint32 value;
+    }
+    else if (type == UInt64){
+        uint64 value;
+    }
+    else if (type == Null || type == String || type == WString){
+        Warning("Wrong type: %i", type);
+        Exit(-2);
+    }
+    else {
+        Warning("Wrong type: %i", type);
+        Exit(-1);
+    }
+} PrimitiveValue<optimize=true, read=readPrimitiveValue>;
+
+
+string readPrimitiveValue(PrimitiveValue &v){
+    string s;
+    SPrintf(s, "%i", v.value);
+    return s;
+}
+#endif

@@ -1,0 +1,43 @@
+//--------------------------------------
+//--- 010 Editor v6.0.3 Binary Template
+//
+// File: record_utils.bt
+// Author: Nickolas Fox
+// Revision: 0.1
+// Purpose: Some utilities related to 010 editor UI
+//--------------------------------------
+#ifndef _RECORD_UTILS_H
+#define _RECORD_UTILS_H
+#include "enums.bt";
+#include "record.bt";
+
+string readSerializationHeaderRecord(SerializationHeaderRecord &v){
+    string s;
+    SPrintf(s, "%s", EnumToString(v.recordType));
+    return s;
+}
+
+string readBinaryObjectStringEntry(BinaryObjectStringEntry &v){
+    string s = "--empty string--";
+    if (v.value.size[0]){
+        SPrintf(s, "%s", v.value.value);
+    };
+    return s;
+}
+
+string readEntry(Entry &v){
+    string s = "";
+    SPrintf(s, "%s", EnumToString(v.entry.recordType));
+    if (v.entry.recordType == BinaryObjectString){
+        SPrintf(s, "%s", v.entry.value.value);
+    }
+    return s;
+}
+
+string readMemberReference(MemberReferenceEntry &v){
+    string s = "";
+    SPrintf(s, "%s:%i", EnumToString(v.recordType), v.idRef);
+    return s;
+}
+
+#endif
