@@ -6,6 +6,7 @@
 .. moduleauthor:: Nickolas Fox <tarvitz@blacklibary.ru>
 .. sectionauthor:: Nickolas Fox <tarvitz@blacklibary.ru>
 """
+from collections import deque
 from functools import partial
 
 
@@ -84,3 +85,22 @@ def search_all(sequence, stream):
         except IndexError:
             break
     return indexes
+
+
+def read_7bit_encoded_int(source):
+    """
+    read int with 7 bit encoded format
+
+    :param bytes source:
+    :rtype: int
+    :return: encoded value
+    """
+    src = deque(source[::-1])
+    num2 = 0
+    num = 0
+    while num2 != 35:
+        byte = src.pop()
+        num |= (byte & 127) << num2
+        num2 += 7
+        if (byte & 128) == 0:
+            return num
