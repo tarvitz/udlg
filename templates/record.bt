@@ -1,0 +1,240 @@
+//--------------------------------------
+//--- 010 Editor v6.0.3 Binary Template
+//
+// File: record.bt
+// Author: Nickolas Fox
+// Revision: 0.1
+// Purpose: for formatter
+//--------------------------------------
+#ifndef _RECORD_H
+#define _RECORD_H
+
+#include "enums.bt";
+#include "common.bt";
+
+typedef struct{
+    RecordTypeEnum recordType;
+    int32 objectId;
+    BinaryArrayTypeEnum binaryType;
+    int32 rank;
+    int32 lengths[rank];
+    if (binaryType == SingleOffset || binaryType == JaggedOffset ||
+        binaryType == RectangularOffset){
+        int32 lowerBounds[rank];        
+    }
+    BinaryTypeEnum type;
+    if (type == Primitive){
+        PrimitiveTypeEnum additionalTypeInfo;
+    }
+    else if (type == SystemClass){
+        LengthPrefixedString additionalTypeInfo;
+    }
+    else if (type == Class){
+        ClassTypeInfo additionalTypeInfo;
+    }
+    else if (type == PrimitiveArray){
+        PrimitiveTypeEnum additionalTypeInfo;
+    }
+} BinaryArrayEntry;
+
+typedef struct{
+    RecordTypeEnum recordType;
+    MessageEnum message;
+    StringValueWithCode methodName;
+    StringValueWithCode typeName;
+    if (recordType & ContextInline){
+        StringValueWithCode callContext;
+    }
+    if (recordType & ArgsInline){
+        ArrayOfValueWithCode args;
+    }
+} BinaryMethodCall;
+
+typedef struct {
+    RecordTypeEnum recordType;
+    int32 rootId;
+    int32 headerId;
+    int32 majorVersion;
+    int32 minorVersion;
+} SerializationHeaderRecord<read=readSerializationHeaderRecord>;
+
+typedef struct{
+    RecordTypeEnum recordType;
+    ArrayInfo arrayInfo;
+} ArraySingleObjectEntry;
+
+typedef struct{
+    RecordTypeEnum recordType;
+    uint32 idRef;
+    // uint32 memberCount;
+} MemberReferenceEntry<optimize=false, read=readMemberReference>;
+
+typedef struct {
+    RecordTypeEnum recordType;
+    uint libraryId;
+    LengthPrefixedString name;
+} BinaryLibraryEntry;
+
+typedef struct{
+    RecordTypeEnum recordType;
+    uint32 objectId;
+    LengthPrefixedString value;
+} BinaryObjectStringEntry<read=readBinaryObjectStringEntry>;
+
+/*typedef struct {
+    RecordTypeEnum recordType;
+    ClassInfo classInfo;
+    MemberTypeInfo memberTypeInfo(classInfo.membersCount);
+} SystemClassWithMembersAndTypesEntry; // somewtf
+
+
+typedef struct{
+    RecordTypeEnum recordType;
+    ClassInfo classInfo;
+} SystemClassWithMembersEntry;
+*/
+
+typedef struct (MemberTypeInfo &memberTypeInfo){
+    local uint i = 0;
+    local RecordTypeEnum localType;
+    local BinaryTypeEnum binaryType;
+    local PrimitiveTypeEnum valueType;
+
+    for (i = 0; i < classInfo.membersCount; i++){    
+        localType = ReadByte(FTell());
+        binaryType = memberTypeInfo.types[i].binaryType;
+
+        if (binaryType == Class || binaryType == Object){
+            if (localType == MemberReference){
+                MemberReferenceEntry entry;
+            }
+            else if (localType == ObjectNull){
+                ObjectNullEntry entry;
+            }
+            else{
+                Warning("Wrong class refence type: %i", binaryType);
+                Exit(-1);
+            }
+        }
+        else if (binaryType == String){
+            Printf("current binary type: %i, local type: %i\n",
+                   binaryType, localType);
+
+            if (localType == MemberReference){
+                MemberReferenceEntry entry;
+            }
+            else if (localType == BinaryObjectString){
+                BinaryObjectStringEntry entry;  
+            }
+            else {
+                Warning("Wrong record type (%i) for binary type 'string' given", localType);
+                Exit(-1);
+            }
+        }
+        else if (binaryType == Primitive){
+            valueType = memberTypeInfo.additionalInfo[i];
+            PrimitiveValue entry(valueType);
+        }
+        else if (binaryType == StringArray){
+            MemberReferenceEntry entry; // why?
+        }
+        else if (binaryType == PrimitiveArray){
+           MemberReferenceEntry entry;
+        }
+        else {
+            Warning("Unknown binary type: %i", binaryType);
+            Exit(-1);
+        }
+    }
+} ClassMembers;
+
+/*
+typedef struct {
+    RecordTypeEnum recordType;
+    ClassInfo classInfo;
+    MemberTypeInfo memberTypeInfo(classInfo.membersCount);
+    uint32 libraryId;
+    ClassMembers members(memberTypeInfo);
+} ClassWithMembersAndTypesEntry;
+*/
+
+typedef struct{
+    RecordTypeEnum recordType;
+    ClassInfo classInfo;
+    if (recordType == SystemClassWithMembers){
+        MemberTypeInfo memberTypeInfo(classInfo.membersCount);
+    }
+    else if (recordType == ClassWithMembers){
+        uint32 libraryId;
+    }
+    else if (recordType == SystemClassWithMembersAndTypes){
+        MemberTypeInfo memberTypeInfo(classInfo.membersCount);
+    }
+    else if (recordType == ClassWithMembersAndTypes){
+       // nothing to do
+        MemberTypeInfo memberTypeInfo(classInfo.membersCount);
+        uint32 libraryId;
+        ClassMembers members(memberTypeInfo);
+    }
+    else {
+        Warning("Wrong ClassEntry type: %i", recordType);
+        Exit(-1);
+    }
+} ClassEntry;
+
+typedef struct(){
+    RecordTypeEnum recordType;
+    int32 objectId;
+    int32 metadataId;
+} ClassWithIdEntry;
+
+typedef struct(RecordTypeEnum localType, int entryIndex){
+    if (localType == MethodCall){
+        BinaryMethodCall entry;
+    }
+    else if (localType == ArraySingleObject){
+        ArraySingleObjectEntry entry;
+    }
+    else if (localType == MemberReference){
+        MemberReferenceEntry entry;
+    }
+    else if (localType == BinaryLibrary){
+        BinaryLibraryEntry entry;
+    }
+    else if (localType == ClassWithId){
+        ClassWithIdEntry entry;           
+    }
+    else if (localType == ClassWithMembersAndTypes ||
+             localType == SystemClassWithMembersAndTypes ||
+             localType == SystemClassWithMembers ||
+             localType == ClassWithMembers){
+        ClassEntry entry;
+    }
+    else if (localType == BinaryObjectString){
+        BinaryObjectStringEntry entry;
+    }
+    else if (localType == ArraySingleString){
+        ArraySingleStringEntry entry;
+    }
+    else if (localType == ArraySinglePrimitive){
+        ArraySinglePrimitiveEntry entry;
+    }
+    else if (localType == BinaryArray){
+        BinaryArrayEntry entry;
+    } // some wtf here too
+    else if (localType == ObjectNull){
+        ObjectNullEntry entry;
+    }
+    else if (localType == MessageEnd){
+        MessageEndEntry entry;
+        break;
+    }
+    
+    else {
+        Warning("Unimplemented Serialization record type: %i", localType);
+        Exit(-1);
+    }
+} Entry<read=readEntry>;
+
+#include "record_utils.bt";
+#endif

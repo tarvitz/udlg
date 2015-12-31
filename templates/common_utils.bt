@@ -1,0 +1,24 @@
+//--------------------------------------
+//--- 010 Editor v6.0.3 Binary Template
+//
+// File: common_utils.bt
+// Author: Nickolas Fox
+// Revision: 0.1
+// Purpose: Some utilities related to 010 editor UI
+//--------------------------------------
+#ifndef _COMMON_UTILS_H
+#define _COMMON_UTILS_H
+#include "common.bt";
+
+string readMessageEndEntry(MessageEndEntry &v){
+    string s = "--end--";
+    return s;
+}
+
+string readBinaryEnumTypes(BinaryEnumTypes &v){
+    string s;
+    SPrintf(s, "%s", EnumToString(v.binaryType));
+    return s;
+}
+
+#endif

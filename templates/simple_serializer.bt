@@ -1,0 +1,13 @@
+//--------------------------------------
+//--- 010 Editor v6.0.3 Binary Template
+//
+// File: SimpleSerializer
+// Author: Nickolas Fox
+// Revision: 0.1
+// Purpose: Test cases serializer and stuff
+//--------------------------------------
+#include "formatter.bt";
+
+while (!FEof()){
+    BinarySerializationFormat record;
+};

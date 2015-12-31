@@ -1,0 +1,24 @@
+//--------------------------------------
+//--- 010 Editor v6.0.3 Binary Template
+//
+// File: formatter.bt
+// Author: Nickolas Fox
+// Revision: 0.1
+// Purpose: Microsoft Binary formater
+//--------------------------------------
+#include "utils.bt";
+#include "enums.bt";
+#include "types.bt";
+#include "common.bt";
+#include "record.bt";
+
+typedef struct{
+    SerializationHeaderRecord header<bgcolor=cLtGreen>;
+    local RecordTypeEnum localType;
+    local uint entryIndex = 0;
+    while(!FEof()) {
+         localType = ReadByte(FTell());
+         Entry record(localType, entryIndex);
+        ++entryIndex;
+    }
+} BinarySerializationFormat;

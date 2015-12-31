@@ -1,0 +1,29 @@
+//--------------------------------------
+//--- 010 Editor v6.0.3 Binary Template
+//
+// File: utils.bt
+// Author: Nickolas Fox
+// Revision: 0.1
+// Purpose: Helpers
+//--------------------------------------
+#ifndef _UTILS_H
+#define _UTILS_H
+uint Read7BitEncodedInt(uint &amount){
+    // evaluate string length
+    local int entryLength = 0;
+    local int offset = 0;
+    local int64 pos = FTell();
+    local ubyte b;
+    do {    
+        b = ReadUByte(pos);
+        ++pos;
+        ++amount;
+        entryLength |= (uint)(b & 127) << offset;
+        offset += 7;
+        if ((b & 128) == 0){
+            break;
+        }
+    } while( offset != 35);
+    return entryLength;
+}
+#endif
