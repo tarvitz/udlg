@@ -6,7 +6,8 @@
 .. moduleauthor:: Nickolas Fox <tarvitz@blacklibary.ru>
 .. sectionauthor:: Nickolas Fox <tarvitz@blacklibary.ru>
 """
-from ctypes import Structure, cast, pointer, c_void_p
+from struct import unpack, calcsize
+from ctypes import Structure, cast, pointer, c_void_p, _SimpleCData
 
 
 class BinaryRecordStructure(Structure):
@@ -26,7 +27,16 @@ class BinaryRecordStructure(Structure):
         :rtype: None
         :return: None
         """
-        raise NotImplementedError(
-            "Initiate structure procedure was "
-            "Not implemented for `%s` record class" % self.__class__.__name__
-        )
+        for field_name, field_type in self._fields_:
+            if issubclass(field_type, self.__class__) or hasattr(field_type,
+                                                                 '_initiate'):
+                instance = field_type()
+                instance._initiate(stream)
+                setattr(self, field_name, instance)
+            elif issubclass(field_type, _SimpleCData):
+                field_format = field_type._type_
+                field_size = calcsize(field_format)
+                data_block, = unpack(field_format, stream.read(field_size))
+                setattr(self, field_name, data_block)
+            else:
+                raise TypeError("Wrong field type: `%r`" % type(field_type))

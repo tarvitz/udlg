@@ -35,10 +35,6 @@ class MessageEnd(BinaryRecordStructure):
         ('record_type', RecordTypeEnum)
     ]
 
-    def _initiate(self, stream):
-        record_type, = unpack('b', stream.read(BYTE_SIZE))
-        self.record_type = record_type
-
 
 class BinaryObjectString(BinaryRecordStructure):
     _fields_ = [
@@ -46,12 +42,6 @@ class BinaryObjectString(BinaryRecordStructure):
         ('object_id', c_uint32),
         ('value', LengthPrefixedString)
     ]
-
-    def _initiate(self, stream):
-        self.record_type, = unpack('b', stream.read(BYTE_SIZE))
-        self.object_id, = unpack('I', stream.read(UINT32_SIZE))
-        #: todo think if make initiate not protected
-        self.value._initiate(stream)
 
 
 class SystemClassWithMembersAndTypes(BinaryRecordStructure):
@@ -159,11 +149,6 @@ class ArraySingleString(BinaryRecordStructure):
         ('array_info', ArrayInfo)
     ]
 
-    def _initiate(self, stream):
-        self.record_type, = unpack('b', stream.read(BYTE_SIZE))
-        self.array_info = ArrayInfo()
-        self.array_info._initiate(stream)
-
 
 class ArraySinglePrimitive(BinaryRecordStructure):
     _fields_ = [
@@ -223,12 +208,6 @@ class BinaryLibrary(BinaryRecordStructure):
         ('library_id', c_uint32),
         ('library_name', LengthPrefixedString)
     ]
-
-    def _initiate(self, stream):
-        self.record_type, = unpack('b', stream.read(BYTE_SIZE))
-        self.library_id, = unpack('I', stream.read(UINT32_SIZE))
-        self.library_name = LengthPrefixedString()
-        self.library_name._initiate(stream)
 
 
 class ClassWithMembersAndTypes(BinaryRecordStructure):
@@ -328,15 +307,8 @@ class MemberReference(BinaryRecordStructure):
         ('id_ref', c_uint32)
     ]
 
-    def _initiate(self, stream):
-        self.record_type, = unpack('b', stream.read(BYTE_SIZE))
-        self.id_ref, = unpack('I', stream.read(UINT32_SIZE))
-
 
 class ObjectNull(BinaryRecordStructure):
     _fields_ = [
         ('record_type', RecordTypeEnum)
     ]
-
-    def _initiate(self, stream):
-        self.record_type, = unpack('b', stream.read(BYTE_SIZE))

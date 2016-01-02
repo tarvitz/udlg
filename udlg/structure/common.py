@@ -84,11 +84,6 @@ class ArrayInfo(BinaryRecordStructure):
         ('length', c_uint32)
     ]
 
-    def _initiate(self, stream):
-        self.object_id, self.length = unpack(
-            '2I', stream.read(UINT32_SIZE * 2)
-        )
-
 
 class ClassInfo(BinaryRecordStructure):
     _fields_ = [
@@ -118,11 +113,6 @@ class ClassTypeInfo(BinaryRecordStructure):
         ('type_name', LengthPrefixedString),
         ('library_id', c_uint32)
     ]
-
-    def _initiate(self, stream):
-        self.type_name = LengthPrefixedString()
-        self.type_name._initiate(stream)
-        self.library_id, = unpack('I', stream.read(UINT32_SIZE))
 
 
 class BinaryEnumType(ctypes.Structure):
