@@ -9,7 +9,7 @@
 import allure
 from udlg import enums
 from udlg.builder import BinaryFormatterFileBuilder
-from udlg.structure import records
+from udlg.structure import records, common
 from unittest import TestCase
 
 #: todo make check if stream is open as binary one
@@ -25,6 +25,9 @@ class BinaryFormatterFileTest(TestCase):
         self.ushort_array_file = open('tests/documents/ushort_array.dat', 'rb')
         self.bool_array_file = open('tests/documents/bool_array.dat', 'rb')
         self.double_array_file = open('tests/documents/double_array.dat', 'rb')
+        self.class_instance_file = open(
+            'tests/documents/simpleclass.dat', 'rb'
+        )
 
     def tearDown(self):
         self.string_file.close()
@@ -34,6 +37,7 @@ class BinaryFormatterFileTest(TestCase):
         self.ushort_array_file.close()
         self.bool_array_file.close()
         self.double_array_file.close()
+        self.class_instance_file.close()
 
     @allure.story('string')
     def test_header(self):
@@ -164,4 +168,40 @@ class BinaryFormatterFileTest(TestCase):
             )
         with allure.step('check message end'):
             self.assertIsInstance(instance.records[1].entry,
+                                  records.MessageEnd)
+
+    @allure.story('class')
+    def test_class_instance(self):
+        instance = BinaryFormatterFileBuilder.build(
+            stream=self.class_instance_file
+        )
+        with allure.step('check first record'):
+            self.assertIsInstance(
+                instance.records[0].entry, records.BinaryLibrary
+            )
+        with allure.step('check class with members and types'):
+            entry = instance.records[1].entry
+            self.assertIsInstance(entry, records.ClassWithMembersAndTypes)
+            self.assertEqual(entry.class_info.members_count, 15)
+            self.assertEqual(entry.member_list[0].value.value, 'blast')
+            self.assertIsInstance(entry.member_list[1],
+                                  records.MemberReference)
+            self.assertIsInstance(entry.member_list[2],
+                                  records.MemberReference)
+            self.assertIsInstance(entry.member_list[3],
+                                  records.ObjectNull)
+            self.assertIsInstance(entry.member_list[4],
+                                  records.ObjectNull)
+            self.assertIsInstance(entry.member_list[5],
+                                  records.BinaryObjectString)
+            self.assertIsInstance(entry.member_list[6],
+                                  records.BinaryObjectString)
+            self.assertEqual(entry.member_list[7], 0x74)
+            self.assertIsInstance(instance.records[14].entry,
+                                  records.ArraySinglePrimitive)
+            self.assertEqual(instance.records[14].entry.get_member_list(),
+                             [100, 200, 300, 400, 500, 600, 700, 800, 900,
+                              1000, 1100, 1200, 1300])
+        with allure.step('check message end'):
+            self.assertIsInstance(instance.records[15].entry,
                                   records.MessageEnd)

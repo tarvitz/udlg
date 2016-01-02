@@ -20,13 +20,21 @@ class BinaryFormatterFileBuilder(object):
         :param stream: stream object
         :rtype: structure.
         :return:
+        :raises EnvironmentError:
+            - if stream was opened not in binary mode
         """
+        if 'b' not in stream.mode:
+            stream.close()
+            raise EnvironmentError(
+                "You should open stream with `binary` (b) flag"
+            )
         document = structure.BinaryDataStructureFile()
         document.header._initiate(stream)
         records = list()
         append = records.append
         while True:
             record = Record()
+            #: todo make _initiate more generic
             record._initiate(stream=stream)
             append(record)
             if record.record_type == RecordTypeEnum.MessageEnd:

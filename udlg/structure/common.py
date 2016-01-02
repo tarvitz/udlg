@@ -19,6 +19,7 @@ from .constants import (
     AdditionalInfoTypeEnum,
     UINT32_SIZE, BYTE_SIZE
 )
+from . import modules
 from .. utils import read_7bit_encoded_int_from_stream
 from .. import enums
 
@@ -118,6 +119,11 @@ class ClassTypeInfo(BinaryRecordStructure):
         ('library_id', c_uint32)
     ]
 
+    def _initiate(self, stream):
+        self.type_name = LengthPrefixedString()
+        self.type_name._initiate(stream)
+        self.library_id, = unpack('I', stream.read(UINT32_SIZE))
+
 
 class BinaryEnumType(ctypes.Structure):
     _fields_ = [
@@ -166,6 +172,10 @@ class AdditionalInfo(BinaryRecordStructure):
         :rtype: None
         :return: None
         """
+        #: todo reconfigure
+        if entry is None:
+            return
+
         if self.type in (enums.AdditionalInfoTypeEnum.PrimitiveTypeEnum,
                          enums.AdditionalInfoTypeEnum.PrimitiveArrayTypeEnum):
             #: todo make it safe
@@ -174,7 +184,7 @@ class AdditionalInfo(BinaryRecordStructure):
             #: primitive type has byte info about primitive type
             entry_ptr = cast(pointer((c_ubyte * 1)(*(entry, ))), c_void_p)
             self.entry_ptr = entry_ptr
-        elif self.type in (enums.AdditionalInfoTypeEnum.ClassInfo,
+        elif self.type in (enums.AdditionalInfoTypeEnum.ClassTypeInfo,
                            enums.AdditionalInfoTypeEnum.LengthPrefixedString):
             self.entry_ptr = cast(pointer(entry), c_void_p)
         else:
@@ -200,14 +210,14 @@ class MemberTypeInfo(BinaryRecordStructure):
         :return: None
         """
         # types and additional info are
-        binary_enum_types = (BinaryTypeEnum * amount)
         types = unpack('%ib' % amount, stream.read(amount))
-        self.types = binary_enum_types(*types)
+        self.types = (BinaryTypeEnum * amount)(*types)
         additional_infoes = []
         append = additional_infoes.append
 
         for idx in range(amount):
             bin_type = self.types[idx]
+            entry = None
             if bin_type == enums.BinaryTypeEnum.Primitive:
                 entry, = unpack('b', stream.read(BYTE_SIZE))
                 additional_info = AdditionalInfo(
@@ -220,9 +230,9 @@ class MemberTypeInfo(BinaryRecordStructure):
                 )
             elif bin_type == enums.BinaryTypeEnum.Class:
                 additional_info = AdditionalInfo(
-                    type=enums.AdditionalInfoTypeEnum.ClassInfo
+                    type=enums.AdditionalInfoTypeEnum.ClassTypeInfo
                 )
-                entry = ClassInfo()
+                entry = ClassTypeInfo()
                 entry._initiate(stream)
             elif bin_type == enums.BinaryTypeEnum.SystemClass:
                 additional_info = AdditionalInfo(
@@ -254,7 +264,8 @@ class MemberEntry(ctypes.Structure):
     """
     """
     _fields_ = (
-        ('type', BinaryTypeEnum),
+        ('record_type', RecordTypeEnum),
+        ('binary_type', BinaryTypeEnum),
         ('primitive_type', PrimitiveTypeEnum),
         ('member_ptr', c_void_p)
     )
@@ -263,22 +274,28 @@ class MemberEntry(ctypes.Structure):
     def member(self):
         if not hasattr(self, '_member'):
             #: conversion process
-            if self.type in (enums.BinaryTypeEnum.PrimitiveArray,
-                             enums.BinaryTypeEnum.Primitive):
+            binary_type = self.binary_type
+            record_type = self.record_type
+            if binary_type in (enums.BinaryTypeEnum.PrimitiveArray,
+                               enums.BinaryTypeEnum.Primitive):
                 member_type = PrimitiveTypeCTypesConversionSet[
                     self.primitive_type
                 ]
                 self._member = cast(
                     self.member_ptr, POINTER(member_type * 1)
                 ).contents[0]
-            elif self.type == enums.BinaryTypeEnum.SystemClass:
-                self._member = cast(self.member_ptr,
-                                    POINTER(LengthPrefixedString)).contents
-            elif self.type == enums.BinaryTypeEnum.Class:
-                self._member = cast(self.member_ptr,
-                                    POINTER(ClassInfo)).contents
+            elif record_type:
+                record_class = getattr(
+                    modules.RECORDS_MODULE,
+                    enums.RecordTypeEnum(record_type).name
+                )
+                self._member = cast(
+                    self.member_ptr, POINTER(record_class)
+                ).contents
             else:
-                raise TypeError("Wrong binary type: %i" % self.type)
+                raise NotImplementedError(
+                    "Not implemented yet or wrong type"
+                )
         return self._member
 
 

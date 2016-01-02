@@ -12,19 +12,21 @@
 
 from __future__ import unicode_literals
 
-from struct import unpack
+from struct import unpack, calcsize
 from ctypes import c_uint32, c_void_p, cast, pointer, POINTER
 
 from .base import BinaryRecordStructure
 from .constants import (
     RecordTypeEnum, PrimitiveTypeEnum, BYTE_SIZE, UINT32_SIZE,
-    PrimitiveTypeCTypesConversionSet
+    PrimitiveTypeCTypesConversionSet, PrimitiveTypeConversionSet
 )
 from .common import (
     LengthPrefixedString, ClassInfo, MemberTypeInfo, MemberEntry, ArrayInfo
 )
 from .utils import (
-    read_primitive_type_from_stream, make_primitive_type_elements_array_pointer)
+    read_record_type,
+    read_primitive_type_from_stream,
+    make_primitive_type_elements_array_pointer)
 from .. import enums
 
 
@@ -213,3 +215,128 @@ class ArraySinglePrimitive(BinaryRecordStructure):
             elements = self.get_ctype_member_elements()
             self._members = elements[:]
         return self._members
+
+
+class BinaryLibrary(BinaryRecordStructure):
+    _fields_ = [
+        ('record_type', RecordTypeEnum),
+        ('library_id', c_uint32),
+        ('library_name', LengthPrefixedString)
+    ]
+
+    def _initiate(self, stream):
+        self.record_type, = unpack('b', stream.read(BYTE_SIZE))
+        self.library_id, = unpack('I', stream.read(UINT32_SIZE))
+        self.library_name = LengthPrefixedString()
+        self.library_name._initiate(stream)
+
+
+class ClassWithMembersAndTypes(BinaryRecordStructure):
+    _fields_ = [
+        ('record_type', RecordTypeEnum),
+        ('class_info', ClassInfo),
+        ('member_type_info', MemberTypeInfo),
+        ('library_id', c_uint32),
+        ('members_ptr', POINTER(MemberEntry)),
+    ]
+
+    def _initiate(self, stream):
+        self.record_type, = unpack('b', stream.read(BYTE_SIZE))
+        self.class_info = ClassInfo()
+        self.class_info._initiate(stream)
+        self.member_type_info = MemberTypeInfo()
+        self.member_type_info._initiate(
+            stream, amount=self.class_info.members_count
+        )
+        self.library_id, = unpack('I', stream.read(UINT32_SIZE))
+        self._initiate_members(stream)
+
+    def _initiate_members(self, stream):
+        """
+        initiate members
+
+        :param stream: stream like object, file stream for example
+        :return: None
+        """
+        members_count = self.class_info.members_count
+        members = []
+        append = members.append
+        binary_types = self.member_type_info.types
+        additional_infoes = self.member_type_info.additional_info
+
+        for i in range(self.class_info.members_count):
+            binary_type = binary_types[i]
+            additional_info = additional_infoes[i]
+
+            if binary_type == enums.BinaryTypeEnum.Primitive:
+                member_entry = MemberEntry(
+                    type=binary_type, primitive_type=additional_info.value
+                )
+                entry_ctype = PrimitiveTypeCTypesConversionSet[
+                    additional_info.value
+                ]
+                primitive_type_format = PrimitiveTypeConversionSet[
+                    enums.PrimitiveTypeEnum(additional_info.value)
+                ]
+                primitive_type_size = calcsize(primitive_type_format)
+                value, = unpack(primitive_type_format,
+                                stream.read(primitive_type_size))
+                array_size = 1
+                value_array = (entry_ctype * array_size)(*(value, ))
+                member_entry.member_ptr = cast(pointer(value_array), c_void_p)
+            else:
+                record_type = read_record_type(stream)
+                member_record_class = globals()[
+                    enums.RecordTypeEnum(record_type).name
+                ]
+                member_record = member_record_class()
+                member_record._initiate(stream)
+                member_entry = MemberEntry(
+                    binary_type=binary_type, primitive_type=0,
+                    record_type=record_type,
+                    member_ptr=member_record.get_void_ptr()
+                )
+            append(member_entry)
+        members_array = (MemberEntry * members_count)(*members)
+        self.members_ptr = members_array
+
+    def get_member_list(self):
+        """
+        get member python list
+
+        :rtype: list
+        :return: member list
+        """
+        if not hasattr(self, '_members'):
+            self._members = []
+            append = self._members.append
+            member_entries = cast(
+                self.members_ptr, POINTER(MemberEntry)
+            )
+            for i in range(self.class_info.members_count):
+                append(member_entries[i].member)
+        return self._members
+
+    @property
+    def member_list(self):
+        return self.get_member_list()
+
+
+class MemberReference(BinaryRecordStructure):
+    _fields_ = [
+        ('record_type', RecordTypeEnum),
+        ('id_ref', c_uint32)
+    ]
+
+    def _initiate(self, stream):
+        self.record_type, = unpack('b', stream.read(BYTE_SIZE))
+        self.id_ref, = unpack('I', stream.read(UINT32_SIZE))
+
+
+class ObjectNull(BinaryRecordStructure):
+    _fields_ = [
+        ('record_type', RecordTypeEnum)
+    ]
+
+    def _initiate(self, stream):
+        self.record_type, = unpack('b', stream.read(BYTE_SIZE))

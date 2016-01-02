@@ -32,8 +32,11 @@ class RecordTypeEnum(IntEnum):
     MethodReturn = 22,
     BinaryMethodCall = 0
 
-    def get_enum_by_value(self):
-        return self.BinaryObjectString.name
+    @classmethod
+    def get_member_values(cls):
+        if not hasattr(cls, '_member_values'):
+            cls._member_values = cls.__members__.values()
+        return cls._member_values
 
 
 class PrimitiveTypeEnum(IntEnum):
@@ -108,11 +111,11 @@ class MessageEnum(IntEnum):
     GenericMethod = 0x8000
 
 
-#: this enum is not part of .NET Binarty Data structure, it uses for
+#: this enum is not part of .NET Binary Data structure, it uses for
 #: data detection inside additional type
 class AdditionalInfoTypeEnum(IntEnum):
     PrimitiveTypeEnum = BinaryTypeEnum.Primitive
     PrimitiveArrayTypeEnum = BinaryTypeEnum.PrimitiveArray
-    ClassInfo = BinaryTypeEnum.SystemClass
+    ClassTypeInfo = BinaryTypeEnum.SystemClass
     LengthPrefixedString = BinaryTypeEnum.Class
     Null = -1

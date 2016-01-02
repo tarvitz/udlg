@@ -8,7 +8,6 @@
 """
 from __future__ import unicode_literals
 
-import importlib
 import ctypes
 from struct import unpack
 from ctypes import (
@@ -16,15 +15,16 @@ from ctypes import (
     POINTER, sizeof, cast,
 )
 from .constants import (
-    BYTE_SIZE, INT_SIZE, RecordTypeEnum, RECORDS_MODULE_PATH
+    BYTE_SIZE, INT_SIZE, RecordTypeEnum
 )
+from .modules import RECORDS_MODULE
 from .utils import read_record_type
 from .. import enums
 
 SAFE_SIZES = [
     c_uint64, c_byte, c_uint32
 ]
-RECORDS_MODULE = importlib.import_module(RECORDS_MODULE_PATH)
+
 
 
 def safe_size_of(c_type):

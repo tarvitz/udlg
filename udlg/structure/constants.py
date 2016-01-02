@@ -39,7 +39,7 @@ PrimitiveTypeConversionSet = {
     #: decimal should be read as LengthPrefixedString yet ;\
     PrimitiveTypeEnumeration.Decimal: None,
     PrimitiveTypeEnumeration.Double: 'd',
-    PrimitiveTypeEnumeration.Int16: 's',
+    PrimitiveTypeEnumeration.Int16: 'h',
     PrimitiveTypeEnumeration.Int32: 'i',
     PrimitiveTypeEnumeration.Int64: 'q',
     PrimitiveTypeEnumeration.UInt16: 'H',
