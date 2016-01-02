@@ -34,7 +34,6 @@ class BinaryFormatterFileBuilder(object):
         append = records.append
         while True:
             record = Record()
-            #: todo make _initiate more generic
             record._initiate(stream=stream)
             append(record)
             if record.record_type == RecordTypeEnum.MessageEnd:

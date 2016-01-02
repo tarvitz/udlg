@@ -5,6 +5,13 @@
 
         - BinaryObjectString
         - MessageEnd
+        - SystemClassWithMembersAndTypes
+        - ArraySingleString
+        - ArraySinglePrimitive
+        - ObjectNull
+        - MemberReference
+        - BinaryLibrary
+        - ClassWithMembersAndTypes
     :platform: Linux, Unix, Windows
 .. moduleauthor:: Nickolas Fox <tarvitz@blacklibary.ru>
 .. sectionauthor:: Nickolas Fox <tarvitz@blacklibary.ru>
