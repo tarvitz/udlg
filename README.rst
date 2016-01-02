@@ -30,17 +30,18 @@ application and available across
 `PyPI <https://pypi.python.org/pypi>`_ as soon as first roadmap would
 be achieved.
 
-document build requirements stored in py3.txt
-
 .. code-block:: bash
-   user@localhost$ virtualenv --no-site-packages venv3
+   user@localhost$ virtualenv --no-site-packages venv3 --python=python3.4
    user@localhost$ source venv3/bin/activate
-   user@localhost$ pip install -r requirements/py3.txt
+   user@localhost$ pip install -r requirements/test.txt
 
 Dependencies
 ~~~~~~~~~~~~
 * python 3.4
 * (explore.py uses python3.5)
+
+On windows you would need to have lxml package you can take
+`it here <http://www.lfd.uci.edu/~gohlke/pythonlibs/#lxml>`_
 
 Tests
 -----
@@ -63,15 +64,7 @@ There're small amount of scripts now:
 - ``explore.py`` - finds all *.udlg inside ``remote/Data/Dialogs`` folder. Please
   modify script or just copy whole Dialogs content to given path.
 
-Temporary
-~~~~~~~~~
-There're temporarty scripts what provides some aggregation data process. They
-could help to access some data.
-
-- ``scripts/header_inspect.py`` shows first block data as hashmap (json dict).
-- ``scripts/udlg_watch.py`` see next block after already investigated and aggregate
-  differences into output.json file.
-
 Documentation
 -------------
-Not yet ;)
+
+- `Binary Format Data Structure <https://msdn.microsoft.com/en-us/library/cc236844.aspx>`_
