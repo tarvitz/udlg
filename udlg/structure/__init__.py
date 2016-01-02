@@ -7,9 +7,9 @@
 .. sectionauthor:: Nickolas Fox <tarvitz@blacklibary.ru>
 """
 from .structure import (
-    UDLG, BinaryDataStructureFile,
+    BinaryDataStructureFile,
     #: structures
     Record
 )
 
-__all__ = ['UDLG', 'BinaryDataStructureFile']
+__all__ = ['BinaryDataStructureFile']

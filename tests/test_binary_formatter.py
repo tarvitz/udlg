@@ -9,10 +9,10 @@
 import allure
 from udlg import enums
 from udlg.builder import BinaryFormatterFileBuilder
-from udlg.structure import records, common
+from udlg.structure import records
 from unittest import TestCase
 
-#: todo make check if stream is open as binary one
+#: todo make test check if stream is open as binary one
 
 
 @allure.feature('Binary Formatter')
