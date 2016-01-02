@@ -7,6 +7,32 @@
 .. sectionauthor:: Nickolas Fox <tarvitz@blacklibary.ru>
 """
 from . import structure
+from .enums import RecordTypeEnum
+from .structure import Record
+
+
+class BinaryFormatterFileBuilder(object):
+    @classmethod
+    def build(cls, stream):
+        """
+        build .net binary data structure record from serialized stream
+
+        :param stream: stream object
+        :rtype: structure.
+        :return:
+        """
+        document = structure.BinaryDataStructureFile()
+        document.header._initiate(stream)
+        records = list()
+        append = records.append
+        while True:
+            record = Record()
+            record._initiate(stream=stream)
+            append(record)
+            if record.record_type == RecordTypeEnum.MessageEnd:
+                break
+        document.records = (Record * len(records))(*records)
+        return document
 
 
 class UDLGBuilder(object):
@@ -29,3 +55,5 @@ class UDLGBuilder(object):
         document.start._initiate(stream)
         document.header._initiate(stream)
         return document
+
+

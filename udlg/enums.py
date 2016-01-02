@@ -1,16 +1,16 @@
-//--------------------------------------
-//--- 010 Editor v6.0.3 Binary Template
-//
-// File: enums.bt
-// Author:  Nickolas Fox
-// Revision: 0.1
-// Purpose: Representation for some official C# Enums 
-//--------------------------------------
-#ifndef _ENUMS_H
-#define _ENUMS_H
+# -*- coding: utf-8 -*-
+"""
+.. module:: udlg.enums
+    :synopsis: Enumerations
+    :platform: Linux, Unix, Windows
+.. moduleauthor:: Nickolas Fox <tarvitz@blacklibary.ru>
+.. sectionauthor:: Nickolas Fox <tarvitz@blacklibary.ru>
+"""
+from enum import IntEnum
 
-enum <ubyte> RecordTypeEnum{
-    SerilizedStreamHeader = 0,
+
+class RecordTypeEnum(IntEnum):
+    SerializedStreamHeader = 0,
     ClassWithId = 1,
     SystemClassWithMembers = 2,
     ClassWithMembers = 3,
@@ -29,10 +29,14 @@ enum <ubyte> RecordTypeEnum{
     ArraySingleObject = 16,
     ArraySingleString = 17,
     MethodCall = 21,
-    MethodReturn = 22
-};
+    MethodReturn = 22,
+    BinaryMethodCall = 0
 
-enum <ubyte> PrimitiveTypeEnum{
+    def get_enum_by_value(self):
+        return self.BinaryObjectString.name
+
+
+class PrimitiveTypeEnum(IntEnum):
     Boolean = 1,
     Byte = 2,
     Char = 3,
@@ -42,17 +46,31 @@ enum <ubyte> PrimitiveTypeEnum{
     Int32 = 8,
     Int64 = 9,
     SByte = 10,
-    Float = 11,
+    Single = 11,
     TimeSpan = 12,
     DateTime = 13,
     UInt16 = 14,
     UInt32 = 15,
     UInt64 = 16,
     Null = 17,
-    WString = 18
-};
+    String = 18
 
-enum <ubyte> BinaryTypeEnum{
+    @classmethod
+    def get_int_types(cls):
+        return (
+            cls.Int16, cls.Int32, cls.Int64, cls.UInt16, cls.UInt32, cls.UInt64
+        )
+
+    @classmethod
+    def get_float_types(cls):
+        return cls.Single, cls.Double
+
+    @classmethod
+    def get_invalid_types(cls):
+        return cls.String, cls.Null
+
+
+class BinaryTypeEnum(IntEnum):
     Primitive = 0,
     String = 1,
     Object = 2,
@@ -61,18 +79,18 @@ enum <ubyte> BinaryTypeEnum{
     ObjectArray = 5,
     StringArray = 6,
     PrimitiveArray = 7
-};
 
-enum <ubyte> BinaryArrayTypeEnum{
+
+class BinaryArrayTypeEnum(IntEnum):
     Single = 0,
     Jagged = 1,
     Rectangular = 2,
     SingleOffset = 3,
     JaggedOffset = 4,
     RectangularOffset = 5
-};
 
-enum <uint> MessageEnum{
+
+class MessageEnum(IntEnum):
     noArgs = 0x1,
     ArgsInline = 0x2,
     ArgsIsArray = 0x4,
@@ -88,6 +106,13 @@ enum <uint> MessageEnum{
     ReturnValueInArray = 0x1000,
     ExceptionInArray = 0x2000,
     GenericMethod = 0x8000
-};
 
-#endif
+
+#: this enum is not part of .NET Binarty Data structure, it uses for
+#: data detection inside additional type
+class AdditionalInfoTypeEnum(IntEnum):
+    PrimitiveTypeEnum = BinaryTypeEnum.Primitive
+    PrimitiveArrayTypeEnum = BinaryTypeEnum.PrimitiveArray
+    ClassInfo = BinaryTypeEnum.SystemClass
+    LengthPrefixedString = BinaryTypeEnum.Class
+    Null = -1

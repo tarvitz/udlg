@@ -6,8 +6,11 @@
 .. moduleauthor:: Nickolas Fox <tarvitz@blacklibary.ru>
 .. sectionauthor:: Nickolas Fox <tarvitz@blacklibary.ru>
 """
+from struct import unpack
 from collections import deque
 from functools import partial
+
+from ..structure.constants import BYTE_SIZE
 
 
 def search(sequence, stream, stream_offset=0x0):
@@ -85,6 +88,37 @@ def search_all(sequence, stream):
         except IndexError:
             break
     return indexes
+
+
+def read_7bit_encoded_int_from_stream(stream):
+    """
+    read int with 7 bit encoded format from stream
+
+    :param stream: stream object, file for example
+    :rtype: int
+    :return: int
+
+    .. code-block:: c
+        do {
+            b = ReadUByte(pos);
+            ++pos;
+            ++amount;
+            entryLength |= (uint)(b & 127) << offset;
+            offset += 7;
+            if ((b & 128) == 0){
+                break;
+            }
+        } while( offset != 35);
+    """
+    b, = unpack('B', stream.read(BYTE_SIZE))
+    entry, offset = 0, 0
+    while offset != 35:
+        entry |= (b & 127) << offset
+        offset += 7
+        if (b & 128) == 0:
+            break
+        b, = unpack('B', stream.read(BYTE_SIZE))
+    return entry
 
 
 def read_7bit_encoded_int(source):
