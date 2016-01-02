@@ -28,6 +28,9 @@ class BinaryFormatterFileTest(TestCase):
         self.class_instance_file = open(
             'tests/documents/simpleclass.dat', 'rb'
         )
+        self.class_with_id_file = open(
+            'tests/documents/class_with_id.dat', 'rb'
+        )
 
     def tearDown(self):
         self.string_file.close()
@@ -38,6 +41,7 @@ class BinaryFormatterFileTest(TestCase):
         self.bool_array_file.close()
         self.double_array_file.close()
         self.class_instance_file.close()
+        self.class_with_id_file.close()
 
     @allure.story('string')
     def test_header(self):
@@ -205,3 +209,13 @@ class BinaryFormatterFileTest(TestCase):
         with allure.step('check message end'):
             self.assertIsInstance(instance.records[15].entry,
                                   records.MessageEnd)
+
+    @allure.story('class')
+    def test_class_with_id(self):
+        instance = BinaryFormatterFileBuilder.build(
+            stream=self.class_with_id_file
+        )
+        with allure.step('check first record'):
+            self.assertIsInstance(
+                instance.records[0].entry, records.BinaryLibrary
+            )

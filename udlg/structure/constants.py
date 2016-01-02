@@ -21,6 +21,7 @@ RecordTypeEnum = c_ubyte
 PrimitiveTypeEnum = c_ubyte
 BinaryTypeEnum = c_ubyte
 AdditionalInfoTypeEnum = c_ubyte
+BinaryArrayTypeEnum = c_ubyte
 
 #: in bytes
 BYTE_SIZE = 1

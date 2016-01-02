@@ -309,3 +309,27 @@ class Members(ctypes.Structure):
             for i in range(self.members_count):
                 append(self.members[i].member)
         return self._members
+
+
+class AdditionalTypeInfo(ctypes.Structure):
+    _fields_ = [
+        ('binary_type', BinaryTypeEnum),
+        ('value_ptr', c_void_p)
+    ]
+
+    @property
+    def value(self):
+        if not hasattr(self, '_value'):
+            if self.binary_type in (enums.BinaryTypeEnum.Primitive,
+                                    enums.BinaryTypeEnum.PrimitiveArray):
+                self._value = cast(self.value_ptr,
+                                   POINTER(c_uint32)).contents[0]
+            elif self.binary_type == enums.BinaryTypeEnum.SystemClass:
+                self._value = cast(self.value_ptr,
+                                   POINTER(LengthPrefixedString)).contents
+            elif self.binary_type == enums.BinaryTypeEnum.Class:
+                self._value = cast(self.value_ptr,
+                                   POINTER(ClassTypeInfo)).contents
+            else:
+                self._value = None
+        return self._value

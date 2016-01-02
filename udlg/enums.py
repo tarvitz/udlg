@@ -92,6 +92,9 @@ class BinaryArrayTypeEnum(IntEnum):
     JaggedOffset = 4,
     RectangularOffset = 5
 
+    @classmethod
+    def get_lower_bounds(cls):
+        return cls.SingleOffset, cls.JaggedOffset, cls.RectangularOffset
 
 class MessageEnum(IntEnum):
     noArgs = 0x1,

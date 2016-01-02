@@ -11,6 +11,7 @@
         - ObjectNull
         - MemberReference
         - BinaryLibrary
+        - BinaryArray
         - ClassWithMembersAndTypes
     :platform: Linux, Unix, Windows
 .. moduleauthor:: Nickolas Fox <tarvitz@blacklibary.ru>
@@ -20,15 +21,17 @@
 from __future__ import unicode_literals
 
 from struct import unpack, calcsize
-from ctypes import c_uint32, c_void_p, cast, pointer, POINTER
+from ctypes import c_uint32, c_void_p, c_ubyte, cast, pointer, POINTER
 
 from .base import BinaryRecordStructure
 from .constants import (
-    RecordTypeEnum, PrimitiveTypeEnum, BYTE_SIZE, UINT32_SIZE,
-    PrimitiveTypeCTypesConversionSet, PrimitiveTypeConversionSet
+    RecordTypeEnum, PrimitiveTypeEnum, BinaryTypeEnum, BinaryArrayTypeEnum,
+    BYTE_SIZE, UINT32_SIZE,
+    PrimitiveTypeCTypesConversionSet, PrimitiveTypeConversionSet,
 )
 from .common import (
-    LengthPrefixedString, ClassInfo, MemberTypeInfo, MemberEntry, ArrayInfo
+    LengthPrefixedString, ClassInfo, MemberTypeInfo, MemberEntry, ArrayInfo,
+    AdditionalTypeInfo, ClassTypeInfo
 )
 from .utils import (
     read_record_type,
@@ -319,3 +322,62 @@ class ObjectNull(BinaryRecordStructure):
     _fields_ = [
         ('record_type', RecordTypeEnum)
     ]
+
+
+class BinaryArray(BinaryRecordStructure):
+    _fields_ = [
+        ('record_type', RecordTypeEnum),
+        ('object_id', c_uint32),
+        ('binary_type', BinaryArrayTypeEnum),
+        ('rank', c_uint32),
+        ('lengths', POINTER(c_uint32)),
+        ('lower_bounds', POINTER(c_uint32)),
+        ('type', BinaryTypeEnum),
+        ('additional_type_info', AdditionalTypeInfo)
+    ]
+
+    def _initiate(self, stream):
+        self.record_type, = unpack('b', stream.read(BYTE_SIZE))
+        self.object_id, = unpack('I', stream.read(UINT32_SIZE))
+        self.binary_type, = unpack('b', stream.read(BYTE_SIZE))
+        self.rank, = unpack('I', stream.read(UINT32_SIZE))
+        lengths = unpack(
+            '%iI' % self.rank, stream.read(UINT32_SIZE * self.rank)
+        )
+        self.lengths = (c_uint32 * len(lengths))(*lengths)
+        if self.binary_type in (enums.BinaryArrayTypeEnum.get_lower_bounds()):
+            lower_bounds = unpack(
+                '%iI' % self.rank, stream.read(UINT32_SIZE * self.rank)
+            )
+            self.lower_bounds = (c_uint32 * len(lower_bounds))(*lower_bounds)
+        self.type, = unpack('b', stream.read(BYTE_SIZE))
+        additional_type_info = AdditionalTypeInfo(binary_type=self.type)
+        if self.type in (enums.BinaryTypeEnum.Primitive,
+                         enums.BinaryTypeEnum.PrimitiveArray):
+            primitive_type, = unpack('b', stream.read(BYTE_SIZE))
+            value = (c_uint32 * 1)(*(primitive_type, ))
+            value_ptr = cast(pointer(value), c_void_p)
+            additional_type_info.value_ptr = value_ptr
+        elif self.type == enums.BinaryTypeEnum.SystemClass:
+            value = LengthPrefixedString()
+            value._initiate(stream)
+            additional_type_info.value_ptr = value.get_void_ptr()
+        elif self.type == enums.BinaryTypeEnum.Class:
+            value = ClassTypeInfo()
+            value._initiate(stream)
+            additional_type_info.value_ptr = value.get_void_ptr()
+        else:
+            raise TypeError("Wrong binary array type: %i" % self.type)
+        self.additional_type_info = additional_type_info
+
+
+class ClassWithId(BinaryRecordStructure):
+    _fields_ = [
+        ('record_type', RecordTypeEnum),
+        ('object_id', c_uint32),
+        ('metadata_id', c_uint32),
+        ('member_ptr', c_void_p)
+    ]
+
+    def _initiate(self, stream):
+        pass
