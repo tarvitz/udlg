@@ -1,0 +1,1 @@
+tests/documents/*.data -crlf -diff

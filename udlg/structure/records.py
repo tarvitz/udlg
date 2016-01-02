@@ -21,8 +21,7 @@ from .constants import (
     PrimitiveTypeCTypesConversionSet
 )
 from .common import (
-    LengthPrefixedString, ClassInfo, MemberTypeInfo, MemberEntry, ArrayInfo,
-    PrimitiveValue
+    LengthPrefixedString, ClassInfo, MemberTypeInfo, MemberEntry, ArrayInfo
 )
 from .utils import (
     read_primitive_type_from_stream, make_primitive_type_elements_array_pointer)
@@ -96,7 +95,8 @@ class SystemClassWithMembersAndTypes(BinaryRecordStructure):
                 additional_info = self.member_type_info.additional_info[i]
                 primitive_type = additional_info.value
                 value = read_primitive_type_from_stream(stream, primitive_type)
-                append(self._create_member_entry(member_type, value))
+                append(self._create_member_entry(value, additional_info,
+                                                 member_type))
             elif member_type == AdditionalInfoTypeEnum.ClassInfo:
                 raise NotImplementedError("Not implemented")
             elif member_type == AdditionalInfoTypeEnum.LengthPrefixedString:
@@ -108,7 +108,7 @@ class SystemClassWithMembersAndTypes(BinaryRecordStructure):
         #: assign members
         self.members = (MemberEntry * len(member_list))(*member_list)
 
-    def _create_member_entry(self, type, value):
+    def _create_member_entry(self, value, additional_info, member_type):
         """
         initiate member entry with specific type
 
@@ -117,12 +117,19 @@ class SystemClassWithMembersAndTypes(BinaryRecordStructure):
         :rtype: MemberEntry
         :return: member entry
         """
-        if type in (enums.BinaryTypeEnum.Primitive,
-                    enums.BinaryTypeEnum.PrimitiveArray):
-            member_ptr = c_void_p(value)
+        primitive_type = 0
+        if member_type in (enums.BinaryTypeEnum.Primitive,
+                           enums.BinaryTypeEnum.PrimitiveArray):
+            primitive_type = enums.PrimitiveTypeEnum(additional_info.value)
+            array_type = PrimitiveTypeCTypesConversionSet[primitive_type]
+            value_entry = (array_type * 1)(*(value, ))
+            member_ptr = cast(pointer(value_entry), c_void_p)
         else:
             member_ptr = value.get_void_ptr()
-        member_entry = MemberEntry(type=type, member_ptr=member_ptr)
+        member_entry = MemberEntry(
+            type=member_type, primitive_type=primitive_type,
+            member_ptr=member_ptr
+        )
         return member_entry
 
     def get_member_list(self):

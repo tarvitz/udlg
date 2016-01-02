@@ -9,12 +9,13 @@
 from __future__ import unicode_literals
 
 import ctypes
-from ctypes import c_uint32, c_void_p, cast, pointer, POINTER
+from ctypes import c_uint32, c_void_p, c_ubyte, cast, pointer, POINTER
 from struct import unpack
 
 from .base import BinaryRecordStructure
 from .constants import (
     BinaryTypeEnum, PrimitiveTypeEnum, RecordTypeEnum,
+    PrimitiveTypeCTypesConversionSet,
     AdditionalInfoTypeEnum,
     UINT32_SIZE, BYTE_SIZE
 )
@@ -50,37 +51,8 @@ class PrimitiveValue(ctypes.Structure):
     _fields_ = [
         ('primitive_type', BinaryTypeEnum),
         #: only value is significant
-        ('value_ptr', ctypes.c_void_p)
+        ('value_ptr', c_void_p)
     ]
-
-    @property
-    def value(self):
-        if not hasattr(self, '_value'):
-            PrimitiveTypeEnum = enums.PrimitiveTypeEnum
-            primitive_type = self.primitive_type
-            if primitive_type in PrimitiveTypeEnum.get_int_types():
-                self._value = int(self.value_ptr)
-            elif primitive_type in PrimitiveTypeEnum.get_float_types():
-                self._value = float(self.value_ptr)
-            elif primitive_type == PrimitiveTypeEnum.Byte:
-                raise NotImplementedError("Not implemented")
-            elif primitive_type == PrimitiveTypeEnum.SByte:
-                raise NotImplementedError("Not implemented")
-            elif primitive_type == PrimitiveTypeEnum.Boolean:
-                self._value = bool(self.value_ptr)
-            elif primitive_type == PrimitiveTypeEnum.Decimal:
-                raise NotImplementedError("Not implemented")
-            elif primitive_type in PrimitiveTypeEnum.DateTime:
-                raise NotImplementedError("Not implemented")
-            elif primitive_type in PrimitiveTypeEnum.TimeSpan:
-                raise NotImplementedError("Not implemented")
-            elif primitive_type in PrimitiveTypeEnum.get_invalid_types():
-                raise TypeError("Given type is unsupported by spec.")
-            else:
-                raise TypeError(
-                    "Wrong primitive type `%i` passed" % primitive_type
-                )
-        return self._value
 
 
 class ValueWithCode(ctypes.Structure):
@@ -171,14 +143,14 @@ class AdditionalInfo(BinaryRecordStructure):
             AdditionalInfoTypeEnum = enums.AdditionalInfoTypeEnum
             if self.type in (AdditionalInfoTypeEnum.PrimitiveTypeEnum,
                              AdditionalInfoTypeEnum.PrimitiveArrayTypeEnum):
-                #: todo investigate how to store just int value address with
-                #: void_ptr or how to prevent memory read on this address
-                #: cause it could cause segfault
-                return int(self.entry_ptr)
+                self._value = cast(
+                    self.entry_ptr, POINTER(c_ubyte * 1)
+                ).contents[0]
             elif self.type == AdditionalInfoTypeEnum.ClassInfo:
-                return cast(POINTER(ClassInfo), self.entry_ptr)
+                self._value = cast(POINTER(ClassInfo), self.entry_ptr)
             elif self.type == AdditionalInfoTypeEnum.LengthPrefixedString:
-                return cast(POINTER(LengthPrefixedString), self.entry_ptr)
+                self._value = cast(POINTER(LengthPrefixedString),
+                                   self.entry_ptr)
             else:
                 raise TypeError(
                     "Wrong additional type format stored: %i" % self.type
@@ -197,9 +169,11 @@ class AdditionalInfo(BinaryRecordStructure):
         if self.type in (enums.AdditionalInfoTypeEnum.PrimitiveTypeEnum,
                          enums.AdditionalInfoTypeEnum.PrimitiveArrayTypeEnum):
             #: todo make it safe
-            #: it's highly insecure as we assign byte iteself not an address
+            #: it's highly insecure as we assign byte itself not an address
             #: where it placed
-            self.entry_ptr = c_void_p(entry)
+            #: primitive type has byte info about primitive type
+            entry_ptr = cast(pointer((c_ubyte * 1)(*(entry, ))), c_void_p)
+            self.entry_ptr = entry_ptr
         elif self.type in (enums.AdditionalInfoTypeEnum.ClassInfo,
                            enums.AdditionalInfoTypeEnum.LengthPrefixedString):
             self.entry_ptr = cast(pointer(entry), c_void_p)
@@ -281,6 +255,7 @@ class MemberEntry(ctypes.Structure):
     """
     _fields_ = (
         ('type', BinaryTypeEnum),
+        ('primitive_type', PrimitiveTypeEnum),
         ('member_ptr', c_void_p)
     )
 
@@ -290,7 +265,12 @@ class MemberEntry(ctypes.Structure):
             #: conversion process
             if self.type in (enums.BinaryTypeEnum.PrimitiveArray,
                              enums.BinaryTypeEnum.Primitive):
-                self._member = int(self.member_ptr)
+                member_type = PrimitiveTypeCTypesConversionSet[
+                    self.primitive_type
+                ]
+                self._member = cast(
+                    self.member_ptr, POINTER(member_type * 1)
+                ).contents[0]
             elif self.type == enums.BinaryTypeEnum.SystemClass:
                 self._member = cast(self.member_ptr,
                                     POINTER(LengthPrefixedString)).contents

@@ -59,7 +59,7 @@ class BinaryFormatterFileTest(TestCase):
     def test_int32(self):
         instance = BinaryFormatterFileBuilder.build(stream=self.uint32_file)
         with allure.step('check records'):
-            self.assertEqual(instance.records[0].entry.members[0].member, 1337)
+            self.assertEqual(instance.records[0].entry.member_list, [1337])
             with allure.step('check members like python list'):
                 self.assertEqual(
                     instance.records[0].entry.get_member_list(), [1337]
