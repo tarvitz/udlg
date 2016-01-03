@@ -219,3 +219,18 @@ class BinaryFormatterFileTest(TestCase):
             self.assertIsInstance(
                 instance.records[0].entry, records.BinaryLibrary
             )
+        with allure.step('check '):
+            self.assertIsInstance(
+                instance.records[15].entry, records.ClassWithId
+            )
+            entry = instance.records[15].entry
+            member_types = [records.BinaryObjectString, int, bool]
+            member_values = ["bla-bla-fier", 1340, True]
+            for member, member_type, member_value in zip(
+                    entry.get_member_list(), member_types, member_values):
+                self.assertIsInstance(member, member_type)
+                self.assertEqual(member, member_value)
+        with allure.step('check message end'):
+            self.assertIsInstance(
+                instance.records[22].entry, records.MessageEnd
+            )

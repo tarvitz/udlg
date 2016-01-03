@@ -53,6 +53,43 @@ class BinaryObjectString(BinaryRecordStructure):
         ('value', LengthPrefixedString)
     ]
 
+    def __str__(self):
+        return "'%s'" % (self.value.value or '')
+
+    def __repr__(self):
+        return str(self.__str__())
+
+    def __eq__(self, other):
+        return self.value.value == other
+
+    def __ne__(self, other):
+        return self.value.value != other
+
+    def __gt__(self, other):
+        return self.value.value > other
+
+    def __ge__(self, other):
+        return self.value.value >= other
+
+    def __lt__(self, other):
+        return self.value.value < other
+
+    def __le__(self, other):
+        return self.value.value <= other
+
+    def __len__(self):
+        return len(self.value.value)
+
+    def __iter__(self):
+        for i in self.value.value:
+            yield i
+
+    def __add__(self, other):
+        raise NotImplementedError("Not implemented yet")
+
+    def __set__(self, instance, value):
+        raise NotImplementedError("Not implemented yet")
+
 
 class SystemClassWithMembersAndTypes(BinaryRecordStructure):
     _fields_ = [
@@ -220,40 +257,48 @@ class BinaryLibrary(BinaryRecordStructure):
     ]
 
 
-class ClassWithMembersAndTypes(BinaryRecordStructure):
-    _fields_ = [
-        ('record_type', RecordTypeEnum),
-        ('class_info', ClassInfo),
-        ('member_type_info', MemberTypeInfo),
-        ('library_id', c_uint32),
-        ('members_ptr', POINTER(MemberEntry)),
-    ]
+class ClassWithMembersMixin(object):
+    def get_member_list(self, class_info=None):
+        """
+        get member python list
 
-    def _initiate(self, stream):
-        self.record_type, = unpack('b', stream.read(BYTE_SIZE))
-        self.class_info = ClassInfo()
-        self.class_info._initiate(stream)
-        self.member_type_info = MemberTypeInfo()
-        self.member_type_info._initiate(
-            stream, amount=self.class_info.members_count
-        )
-        self.library_id, = unpack('I', stream.read(UINT32_SIZE))
-        self._initiate_members(stream)
+        :param udlg.structure.common.ClassInfo class_info: class info object
+        :rtype: list
+        :return: member list
+        """
+        class_info = class_info or getattr(self, class_info, None)
+        if not hasattr(self, '_members'):
+            self._members = []
+            append = self._members.append
+            member_entries = cast(
+                self.members_ptr, POINTER(MemberEntry)
+            )
+            for i in range(class_info.members_count):
+                append(member_entries[i].member)
+        return self._members
 
-    def _initiate_members(self, stream):
+    @property
+    def member_list(self):
+        return self.get_member_list()
+
+    def _initiate_members(self, stream, class_reference=None):
         """
         initiate members
 
+        :param ClassWithMembersAndTypes class_reference: class reference
         :param stream: stream like object, file stream for example
         :return: None
         """
-        members_count = self.class_info.members_count
+        class_reference = class_reference or self
+        class_info = class_reference.class_info
+        member_type_info = class_reference.member_type_info
+        members_count = class_info.members_count
         members = []
         append = members.append
-        binary_types = self.member_type_info.types
-        additional_infoes = self.member_type_info.additional_info
+        binary_types = member_type_info.types
+        additional_infoes = member_type_info.additional_info
 
-        for i in range(self.class_info.members_count):
+        for i in range(class_reference.class_info.members_count):
             binary_type = binary_types[i]
             additional_info = additional_infoes[i]
 
@@ -289,26 +334,27 @@ class ClassWithMembersAndTypes(BinaryRecordStructure):
         members_array = (MemberEntry * members_count)(*members)
         self.members_ptr = members_array
 
-    def get_member_list(self):
-        """
-        get member python list
 
-        :rtype: list
-        :return: member list
-        """
-        if not hasattr(self, '_members'):
-            self._members = []
-            append = self._members.append
-            member_entries = cast(
-                self.members_ptr, POINTER(MemberEntry)
-            )
-            for i in range(self.class_info.members_count):
-                append(member_entries[i].member)
-        return self._members
+class ClassWithMembersAndTypes(ClassWithMembersMixin,
+                               BinaryRecordStructure):
+    _fields_ = [
+        ('record_type', RecordTypeEnum),
+        ('class_info', ClassInfo),
+        ('member_type_info', MemberTypeInfo),
+        ('library_id', c_uint32),
+        ('members_ptr', POINTER(MemberEntry)),
+    ]
 
-    @property
-    def member_list(self):
-        return self.get_member_list()
+    def _initiate(self, stream):
+        self.record_type, = unpack('b', stream.read(BYTE_SIZE))
+        self.class_info = ClassInfo()
+        self.class_info._initiate(stream)
+        self.member_type_info = MemberTypeInfo()
+        self.member_type_info._initiate(
+            stream, amount=self.class_info.members_count
+        )
+        self.library_id, = unpack('I', stream.read(UINT32_SIZE))
+        self._initiate_members(stream)
 
 
 class MemberReference(BinaryRecordStructure):
@@ -371,13 +417,46 @@ class BinaryArray(BinaryRecordStructure):
         self.additional_type_info = additional_type_info
 
 
-class ClassWithId(BinaryRecordStructure):
+class ClassWithId(ClassWithMembersMixin,
+                  BinaryRecordStructure):
     _fields_ = [
         ('record_type', RecordTypeEnum),
         ('object_id', c_uint32),
         ('metadata_id', c_uint32),
-        ('member_ptr', c_void_p)
+        ('members_ptr', POINTER(MemberEntry)),
+        #: skip it on read
+        ('class_reference_type', RecordTypeEnum),
+        ('class_reference_ptr', c_void_p)
     ]
 
     def _initiate(self, stream):
-        pass
+        self.record_type, = unpack('b', stream.read(BYTE_SIZE))
+        self.object_id, self.metadata_id = unpack(
+            '2I', stream.read(UINT32_SIZE * 2)
+        )
+        reference = cast(self._reference_map[self.metadata_id],
+                         POINTER(MemberReference)).contents
+        class_record_type, class_ptr = self._object_id_map[reference.id_ref]
+        class_entry = globals()[enums.RecordTypeEnum(class_record_type).name]
+        class_reference = cast(class_ptr, POINTER(class_entry)).contents
+        self._initiate_members(
+            stream, class_reference=class_reference
+        )
+        self.class_reference_type = class_record_type
+        self.class_reference_ptr = class_reference.get_void_ptr()
+
+    def get_class_reference(self):
+        if not hasattr(self, '_class_reference'):
+            class_record_type = enums.RecordTypeEnum(
+                self.class_reference_type
+            ).name
+            class_type = globals()[class_record_type]
+            self._class_reference = cast(self.class_reference_ptr,
+                                         POINTER(class_type)).contents
+        return self._class_reference
+
+    def get_member_list(self, class_info=None):
+        if class_info is None:
+            class_reference = self.get_class_reference()
+            class_info = class_reference.class_info
+        return super(ClassWithId, self).get_member_list(class_info=class_info)

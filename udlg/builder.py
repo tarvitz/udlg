@@ -32,9 +32,14 @@ class BinaryFormatterFileBuilder(object):
         document.header._initiate(stream)
         records = list()
         append = records.append
+
+        #: id: info
+        object_id_map = {}
+        reference_map = {}
         while True:
             record = Record()
-            record._initiate(stream=stream)
+            record._initiate(stream=stream, object_id_map=object_id_map,
+                             reference_map=reference_map)
             append(record)
             if record.record_type == RecordTypeEnum.MessageEnd:
                 break

@@ -92,7 +92,7 @@ class Record(ctypes.Structure):
             self._entry = cast(self.entry_ptr, pointer_type).contents
         return self._entry
 
-    def _initiate(self, stream):
+    def _initiate(self, stream, object_id_map, reference_map):
         """
         initiate instance fields (construct) from stream
 
@@ -109,7 +109,25 @@ class Record(ctypes.Structure):
         record_class_name = enums.RecordTypeEnum(self.record_type).name
         record_entry_class = getattr(RECORDS_MODULE, record_class_name)
         record_entry = record_entry_class()
+        record_entry._object_id_map = object_id_map
+        record_entry._reference_map = reference_map
         record_entry._initiate(stream)
+
+        #: todo something that should be reassemble
+        if hasattr(record_entry, 'class_info'):
+            object_id_map.update({
+                record_entry.class_info.object_id: (
+                    record_entry.record_type,
+                    record_entry.get_void_ptr()
+                )
+            })
+        elif hasattr(record_entry, 'id_ref'):
+            reference_map.update({
+                record_entry.id_ref: record_entry.get_void_ptr()
+            })
+        else:
+            pass
+
         entry_void_ptr = record_entry.get_void_ptr()
         self.entry_ptr = entry_void_ptr
 

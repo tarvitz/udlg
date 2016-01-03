@@ -7,7 +7,7 @@
 .. sectionauthor:: Nickolas Fox <tarvitz@blacklibary.ru>
 """
 from struct import unpack, calcsize
-from ctypes import Structure, cast, pointer, c_void_p, _SimpleCData
+from ctypes import Structure, cast, pointer, c_void_p, _SimpleCData, _Pointer
 
 
 class BinaryRecordStructure(Structure):
@@ -38,5 +38,8 @@ class BinaryRecordStructure(Structure):
                 field_size = calcsize(field_format)
                 data_block, = unpack(field_format, stream.read(field_size))
                 setattr(self, field_name, data_block)
+            elif issubclass(field_type, _Pointer):
+                #: nothing to do, should be initialized in subclass
+                pass
             else:
                 raise TypeError("Wrong field type: `%r`" % type(field_type))
