@@ -10,7 +10,7 @@ from __future__ import unicode_literals
 
 import ctypes
 from ctypes import c_int32, c_uint32, c_void_p, c_ubyte, cast, pointer, POINTER
-from struct import unpack
+from struct import unpack, pack
 
 from .base import BinaryRecordStructure
 from .constants import (
@@ -29,6 +29,33 @@ class LengthPrefixedString(BinaryRecordStructure):
         ('size', ctypes.c_uint32),
         ('value', ctypes.c_wchar_p)
     ]
+
+    #: todo: improve
+    @staticmethod
+    def encode7bit(value):
+        """
+        encode value to 7bit encoded bytestring representing this value
+
+        :param int value: value to encode
+        :rtype: bytes
+        :return: byte
+        """
+        temp = value
+        byte_storage = b''
+
+        while temp >= 128:
+            byte_storage += chr(0x000000FF & (temp | 0x80))
+            temp >>= 7
+        byte_storage += bytes(chr(temp).encode('utf-8'))
+        return byte_storage
+
+    def to_bin(self):
+        document = bytearray()
+        value = bytes(self.value.encode('utf-8'))
+        size = self.encode7bit(self.size)
+        document.extend(pack('%is' % len(size), size))
+        document.extend(pack('%is' % self.size, value))
+        return document
 
     def __repr__(self):
         if self.value:

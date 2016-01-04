@@ -17,7 +17,7 @@ from ctypes import (
 from .constants import (
     BYTE_SIZE, INT_SIZE, RecordTypeEnum
 )
-from .base import SimpleToDictMixin
+from .base import SimpleSerializerMixin
 from . import records
 from .utils import read_record_type
 from .. import enums
@@ -32,7 +32,7 @@ def safe_size_of(c_type):
     return c_type in SAFE_SIZES and sizeof(c_type) or 0
 
 
-class SerializationHeader(SimpleToDictMixin, ctypes.Structure):
+class SerializationHeader(SimpleSerializerMixin, ctypes.Structure):
     _fields_ = [
         #: enums.RecordTypeEnum
         ('record_type', c_ubyte),
@@ -66,7 +66,7 @@ class SerializationHeader(SimpleToDictMixin, ctypes.Structure):
         self.minor_version = minor_version
 
 
-class Record(SimpleToDictMixin, ctypes.Structure):
+class Record(SimpleSerializerMixin, ctypes.Structure):
     _fields_ = (
         ('record_type', RecordTypeEnum),
         ('entry_ptr', ctypes.c_void_p)
@@ -75,6 +75,9 @@ class Record(SimpleToDictMixin, ctypes.Structure):
     def __init__(self, *args, **kwargs):
         self._entry = None
         super(Record, self).__init__(*args, **kwargs)
+
+    def to_bin(self):
+        return self.entry.to_bin()
 
     def __str__(self):
         return '<Record: at 0x%16x>' % id(self)
@@ -158,7 +161,7 @@ class Record(SimpleToDictMixin, ctypes.Structure):
             pass
 
 
-class UDLGHeader(SimpleToDictMixin, ctypes.Structure):
+class UDLGHeader(SimpleSerializerMixin, ctypes.Structure):
     _fields_ = [
         ('unknown_1', c_uint32),
         ('unknown_2', c_uint32),
@@ -169,12 +172,15 @@ class UDLGHeader(SimpleToDictMixin, ctypes.Structure):
     ]
 
 
-class BinaryDataStructureFile(SimpleToDictMixin, ctypes.Structure):
+class BinaryDataStructureFile(SimpleSerializerMixin, ctypes.Structure):
     _fields_ = [
         ('header', SerializationHeader),
         ('records_ptr', POINTER(Record)),
         ('count', c_uint32)
     ]
+
+    #: exclude from serialization
+    _exclude_ = ('count', )
 
     @property
     def records(self):
@@ -184,7 +190,7 @@ class BinaryDataStructureFile(SimpleToDictMixin, ctypes.Structure):
         return self.records_ptr[:self.count]
 
 
-class UDLGFile(SimpleToDictMixin, ctypes.Structure):
+class UDLGFile(SimpleSerializerMixin, ctypes.Structure):
     _fields_ = [
         ('header', UDLGHeader),
         ('data', BinaryDataStructureFile)

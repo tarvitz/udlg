@@ -6,11 +6,14 @@
 .. moduleauthor:: Nickolas Fox <tarvitz@blacklibary.ru>
 .. sectionauthor:: Nickolas Fox <tarvitz@blacklibary.ru>
 """
-from struct import unpack, calcsize
+from struct import unpack, pack, calcsize
 from ctypes import Structure, cast, pointer, c_void_p, _SimpleCData, _Pointer
 
 
-class SimpleToDictMixin(object):
+class SimpleSerializerMixin(object):
+    """
+    Very basic and dumb serializer :), please do not count on it too much.
+    """
     def to_dict(self):
         document = {}
         for field_name, field_type in self._fields_:
@@ -26,8 +29,33 @@ class SimpleToDictMixin(object):
             })
         return document
 
+    def to_bin(self):
+        """
+        convert python to byte
 
-class BinaryRecordStructure(SimpleToDictMixin, Structure):
+        :rtype: bytearray
+        :return: binary data
+        """
+        document = bytearray()
+        extend = document.extend
+
+        for field_name, field_type in self._fields_:
+            #: some data should not be serialized
+            if field_name in getattr(self, '_exclude_', []):
+                continue
+
+            entry = getattr(self, field_name.replace('_ptr', ''))
+            if hasattr(entry, 'to_bin'):
+                extend(entry.to_bin())
+            elif isinstance(entry, list):
+                for item in entry:
+                    extend(item.to_bin())
+            else:
+                extend(pack(field_type._type_, entry))
+        return document
+
+
+class BinaryRecordStructure(SimpleSerializerMixin, Structure):
     def __repr__(self):
         return '<%s at 0x%08x>' % (self.__class__.__name__,
                                    id(self))

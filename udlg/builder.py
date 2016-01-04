@@ -6,6 +6,7 @@
 .. moduleauthor:: Nickolas Fox <tarvitz@blacklibary.ru>
 .. sectionauthor:: Nickolas Fox <tarvitz@blacklibary.ru>
 """
+import io
 from . import structure
 from .enums import RecordTypeEnum
 from .structure import Record, UDLGFile
@@ -23,11 +24,12 @@ class BinaryFormatterFileBuilder(object):
         :raises EnvironmentError:
             - if stream was opened not in binary mode
         """
-        if 'b' not in stream.mode:
-            stream.close()
-            raise EnvironmentError(
-                "You should open stream with `binary` (b) flag"
-            )
+        if isinstance(stream, io.BufferedReader):
+            if 'b' not in stream.mode:
+                stream.close()
+                raise EnvironmentError(
+                    "You should open stream with `binary` (b) flag"
+                )
         document = structure.BinaryDataStructureFile()
         document.header._initiate(stream)
         records = list()
