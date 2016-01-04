@@ -58,16 +58,16 @@ def read_primitive_type_from_stream(stream, primitive_type):
     return value
 
 
-def make_primitive_type_elements_array_pointer(type, elements):
+def make_primitive_type_elements_array_pointer(primitive_type, elements):
     """
     create void pointer on array elements
 
-    :param PrimitiveTypeEnum type: primitive type
+    :param PrimitiveTypeEnum primitive_type: primitive type
     :param list | tuple elements: primitive type elements (values)
     :rtype: ctypes.c_void_p
     :return: void pointer on array
     """
     size = len(elements)
-    array_type = PrimitiveTypeCTypesConversionSet[type]
+    array_type = PrimitiveTypeCTypesConversionSet[primitive_type]
     array = (array_type * size)(*elements)
     return cast(array, c_void_p)
