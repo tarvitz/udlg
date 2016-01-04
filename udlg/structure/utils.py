@@ -43,16 +43,16 @@ def resize_array(array, size):
 
 
 #: todo implement timespan, decimal, datetime
-def read_primitive_type_from_stream(stream, type):
+def read_primitive_type_from_stream(stream, primitive_type):
     """
     read primitive type from stream
 
     :param stream: stream object, for example file stream
-    :param int type: type (PrimitiveTypeEnumeration based type)
+    :param int primitive_type: type (PrimitiveTypeEnumeration based type)
     :rtype: int | float | bool | datetime | char | decimal.Decimal
     :return:
     """
-    call_format = PrimitiveTypeConversionSet[type]
+    call_format = PrimitiveTypeConversionSet[primitive_type]
     call_size = calcsize(call_format)
     value, = unpack(call_format, stream.read(call_size))
     return value
