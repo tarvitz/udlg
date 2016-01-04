@@ -190,7 +190,7 @@ class SystemClassWithMembersAndTypes(BinaryRecordStructure):
             self._members = []
             append = self._members.append
             for i in range(self.class_info.members_count):
-                append(self.members[i].member)
+                append(self.members_ptr[i].member)
         return self._members
 
     @property

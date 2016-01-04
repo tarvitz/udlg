@@ -17,6 +17,21 @@ from unittest import TestCase
 
 @allure.feature('Binary Formatter')
 class BinaryFormatterFileTest(TestCase):
+    string_dict = {
+        'count': 2,
+        'header': {'header_id': -1, 'major_version': 1, 'minor_version': 0,
+                   'record_type': 0, 'root_id': 1},
+        'records': [
+            {
+                'entry': {
+                    'object_id': 1, 'record_type': 6,
+                    'value': {'size': 27,
+                              'value': 'String should be serialized'}},
+                'record_type': 6
+            },
+            {'entry': {'record_type': 11}, 'record_type': 11}]
+    }
+
     def setUp(self):
         self.string_file = open('tests/documents/string.dat', 'rb')
         self.uint32_file = open('tests/documents/uint32.dat', 'rb')
@@ -67,6 +82,12 @@ class BinaryFormatterFileTest(TestCase):
             self.assertIsInstance(instance.records[1].entry,
                                   records.MessageEnd)
 
+    @allure.story('to dict')
+    def test_instance_to_dict(self):
+        instance = BinaryFormatterFileBuilder.build(stream=self.string_file)
+        with allure.step('check records'):
+            self.assertEqual(instance.to_dict(), self.string_dict)
+
     @allure.story('int')
     def test_int32(self):
         instance = BinaryFormatterFileBuilder.build(stream=self.uint32_file)
@@ -74,7 +95,7 @@ class BinaryFormatterFileTest(TestCase):
             self.assertEqual(instance.records[0].entry.member_list, [1337])
             with allure.step('check members like python list'):
                 self.assertEqual(
-                    instance.records[0].entry.get_member_list(), [1337]
+                    instance.records[0].members, [1337]
                 )
             self.assertIsInstance(instance.records[1].entry,
                                   records.MessageEnd)
