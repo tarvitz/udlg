@@ -528,6 +528,7 @@ class ClassWithId(ClassWithMembersMixin,
         ('class_reference_type', RecordTypeEnum),
         ('class_reference_ptr', c_void_p)
     ]
+    _exclude_ = ('class_reference_type', 'class_reference_ptr')
 
     def get_class_reference(self):
         if not hasattr(self, '_class_reference'):

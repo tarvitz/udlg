@@ -8,7 +8,7 @@
 """
 from struct import unpack, pack, calcsize
 from ctypes import Structure, cast, pointer, c_void_p, _SimpleCData, _Pointer
-
+from .constants import PrimitiveTypeConversionSet
 
 class SimpleSerializerMixin(object):
     """
@@ -39,6 +39,15 @@ class SimpleSerializerMixin(object):
         document = bytearray()
         extend = document.extend
 
+        #: super extra hack
+        member_type_info = None
+        if hasattr(self, 'member_type_info'):
+            member_type_info = self.member_type_info
+        elif hasattr(self, 'class_reference'):
+            member_type_info = self.class_reference.member_type_info
+        else:
+            pass
+
         for field_name, field_type in self._fields_:
             #: some data should not be serialized
             if field_name in getattr(self, '_exclude_', []):
@@ -48,10 +57,28 @@ class SimpleSerializerMixin(object):
             if hasattr(entry, 'to_bin'):
                 extend(entry.to_bin())
             elif isinstance(entry, list):
-                for item in entry:
-                    extend(item.to_bin())
+                for idx, item in enumerate(entry):
+                    if hasattr(item, 'to_bin'):
+                        extend(item.to_bin())
+                    else:
+                        primitive_type = member_type_info.additional_info[
+                            idx
+                        ].value
+                        ctype_primitive = PrimitiveTypeConversionSet[
+                            primitive_type
+                        ]
+                        extend(pack(ctype_primitive, item))
             else:
-                extend(pack(field_type._type_, entry))
+                if issubclass(field_type, _Pointer):
+                    count = getattr(self, 'count')
+                    if issubclass(field_type._type_, Structure):
+                        for item in entry[:count]:
+                            extend(item.to_bin())
+                    else:
+                        extend(pack('%i%s' % (count, field_type._type_._type_),
+                                    *entry[:count]))
+                else:
+                    extend(pack(field_type._type_, entry))
         return document
 
 

@@ -9,7 +9,7 @@
 import io
 import allure
 from udlg import enums
-from udlg.builder import BinaryFormatterFileBuilder
+from udlg.builder import BinaryFormatterFileBuilder, UDLGBuilder
 from unittest import TestCase
 
 
@@ -17,6 +17,7 @@ from unittest import TestCase
 class BinaryFormatterFileTest(TestCase):
     def setUp(self):
         self.string_file = open('tests/documents/string.dat', 'rb')
+        self.lucas = open('tests/documents/Lucas1.udlg', 'rb')
 
     def tearDown(self):
         self.string_file.close()
@@ -49,3 +50,18 @@ class BinaryFormatterFileTest(TestCase):
             stream = io.BytesIO(binary_data)
             instance_from = BinaryFormatterFileBuilder.build(stream=stream)
             self.assertEqual(instance.count, instance_from.count)
+
+    @allure.story('to bin')
+    def test_udlg_convert_to_bin(self):
+        instance = UDLGBuilder.build(self.lucas)
+        with allure.step('check'):
+            self.assertEqual(instance.data.header.record_type,
+                             enums.RecordTypeEnum.SerializedStreamHeader)
+        with allure.step('to bin'):
+            binary_data = instance.to_bin()
+            self.assertIsInstance(binary_data, bytearray)
+            self.assertEqual(len(binary_data), self.lucas.tell())
+        with allure.step('from bin'):
+            stream = io.BytesIO(binary_data)
+            instance_from = UDLGBuilder.build(stream=stream)
+            self.assertEqual(instance.data.count, instance_from.data.count)

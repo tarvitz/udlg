@@ -122,4 +122,4 @@ class AdditionalInfoTypeEnum(IntEnum):
     PrimitiveArrayTypeEnum = BinaryTypeEnum.PrimitiveArray
     ClassTypeInfo = BinaryTypeEnum.SystemClass
     LengthPrefixedString = BinaryTypeEnum.Class
-    Null = -1
+    Null = 255

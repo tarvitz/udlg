@@ -138,3 +138,22 @@ def read_7bit_encoded_int(source):
         num2 += 7
         if (byte & 128) == 0:
             return num
+
+
+#: todo: improve
+def write_7bit_int(value):
+    """
+    encode value to 7bit encoded bytestring representing this value
+
+    :param int value: value to encode
+    :rtype: bytes
+    :return: byte
+    """
+    temp = value
+    byte_storage = b''
+
+    while temp >= 128:
+        byte_storage += chr(0x000000FF & (temp | 0x80)).encode('latin1')
+        temp >>= 7
+    byte_storage += bytes(chr(temp).encode('latin1'))
+    return byte_storage

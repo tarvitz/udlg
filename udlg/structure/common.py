@@ -20,7 +20,7 @@ from .constants import (
     UINT32_SIZE, BYTE_SIZE, INT32_SIZE
 )
 from . import modules
-from .. utils import read_7bit_encoded_int_from_stream
+from .. utils import read_7bit_encoded_int_from_stream, write_7bit_int
 from .. import enums
 
 
@@ -30,29 +30,10 @@ class LengthPrefixedString(BinaryRecordStructure):
         ('value', ctypes.c_wchar_p)
     ]
 
-    #: todo: improve
-    @staticmethod
-    def encode7bit(value):
-        """
-        encode value to 7bit encoded bytestring representing this value
-
-        :param int value: value to encode
-        :rtype: bytes
-        :return: byte
-        """
-        temp = value
-        byte_storage = b''
-
-        while temp >= 128:
-            byte_storage += chr(0x000000FF & (temp | 0x80))
-            temp >>= 7
-        byte_storage += bytes(chr(temp).encode('utf-8'))
-        return byte_storage
-
     def to_bin(self):
         document = bytearray()
         value = bytes(self.value.encode('utf-8'))
-        size = self.encode7bit(self.size)
+        size = write_7bit_int(self.size)
         document.extend(pack('%is' % len(size), size))
         document.extend(pack('%is' % self.size, value))
         return document
@@ -200,8 +181,21 @@ class BinaryEnumType(ctypes.Structure):
 class AdditionalInfo(BinaryRecordStructure):
     _fields_ = [
         ('type', AdditionalInfoTypeEnum),
-        ('entry_ptr', c_void_p),
+        ('value_ptr', c_void_p),
     ]
+    _exclude_ = ('type', )
+
+    def to_bin(self):
+        document = bytearray()
+        if self.type == enums.AdditionalInfoTypeEnum.Null:
+            return document
+        # document.extend(pack('B', self.type))
+        if self.type in (enums.AdditionalInfoTypeEnum.PrimitiveTypeEnum,
+                         enums.AdditionalInfoTypeEnum.PrimitiveArrayTypeEnum):
+            document.extend(pack('b', self.value))
+        else:
+            document.extend(self.value.to_bin())
+        return document
 
     def to_dict(self):
         value = (
@@ -222,24 +216,24 @@ class AdditionalInfo(BinaryRecordStructure):
             udlg.structure.common.LengthPrefixedString
         :return: value
         """
-        if not hasattr(self, '_value') and self.entry_ptr:
+        if not hasattr(self, '_value') and self.value_ptr:
             AdditionalInfoTypeEnum = enums.AdditionalInfoTypeEnum
             if self.type in (AdditionalInfoTypeEnum.PrimitiveTypeEnum,
                              AdditionalInfoTypeEnum.PrimitiveArrayTypeEnum):
                 self._value = cast(
-                    self.entry_ptr, POINTER(c_ubyte * 1)
+                    self.value_ptr, POINTER(c_ubyte * 1)
                 ).contents[0]
             elif self.type == AdditionalInfoTypeEnum.ClassTypeInfo:
-                self._value = cast(self.entry_ptr,
+                self._value = cast(self.value_ptr,
                                    POINTER(ClassTypeInfo)).contents
             elif self.type == AdditionalInfoTypeEnum.LengthPrefixedString:
-                self._value = cast(self.entry_ptr,
+                self._value = cast(self.value_ptr,
                                    POINTER(LengthPrefixedString)).contents
             else:
                 raise TypeError(
                     "Wrong additional type format stored: %i" % self.type
                 )
-        elif not self.entry_ptr:
+        elif not self.value_ptr:
             return None
         return self._value
 
@@ -262,11 +256,11 @@ class AdditionalInfo(BinaryRecordStructure):
             #: it's highly insecure as we assign byte itself not an address
             #: where it placed
             #: primitive type has byte info about primitive type
-            entry_ptr = cast(pointer((c_ubyte * 1)(*(entry, ))), c_void_p)
-            self.entry_ptr = entry_ptr
+            value_ptr = cast(pointer((c_ubyte * 1)(*(entry, ))), c_void_p)
+            self.value_ptr = value_ptr
         elif self.type in (enums.AdditionalInfoTypeEnum.ClassTypeInfo,
                            enums.AdditionalInfoTypeEnum.LengthPrefixedString):
-            self.entry_ptr = cast(pointer(entry), c_void_p)
+            self.value_ptr = cast(pointer(entry), c_void_p)
         else:
             raise TypeError(
                 "Given type `%r` of entry isn't supported" % type(entry)
@@ -279,6 +273,7 @@ class MemberTypeInfo(BinaryRecordStructure):
         ('types', POINTER(BinaryTypeEnum)),
         ('additional_info', POINTER(AdditionalInfo))
     ]
+    _exclude_ = ('count', )
 
     def to_dict(self):
         types = self.types
