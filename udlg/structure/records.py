@@ -3,16 +3,24 @@
 .. module:: udlg.structure.records
     :synopsis: .NET Binary Data structure records:
 
-        - BinaryObjectString
-        - MessageEnd
-        - SystemClassWithMembersAndTypes
-        - ArraySingleString
         - ArraySinglePrimitive
-        - ObjectNull
-        - MemberReference
-        - BinaryLibrary
+        - ArraySingleString
+        - <ArraySingleObject>
         - BinaryArray
+        - BinaryLibrary
+        - BinaryObjectString
+        - ClassWithId
+        - <ClassWithMembers>
         - ClassWithMembersAndTypes
+        - MemberReference
+        - <MemberPrimitiveTyped>
+        - <MemberPrimitiveUnTyped>
+        - MessageEnd
+        - ObjectNull
+        - <ObjectNullMultiple>
+        - ObjectNullMultiple256
+        - <SystemClassWithMembers>
+        - SystemClassWithMembersAndTypes
     :platform: Linux, Unix, Windows
 .. moduleauthor:: Nickolas Fox <tarvitz@blacklibary.ru>
 .. sectionauthor:: Nickolas Fox <tarvitz@blacklibary.ru>
@@ -249,6 +257,16 @@ class ArraySinglePrimitive(BinaryRecordStructure):
         return self._members
 
 
+class ArraySingleObject(BinaryRecordStructure):
+    _fields_ = [
+        ('record_type', RecordTypeEnum),
+        ('array_info', ArrayInfo)
+    ]
+
+    def _initiate(self, stream):
+        raise NotImplementedError("Yet not implemented")
+
+
 class BinaryLibrary(BinaryRecordStructure):
     _fields_ = [
         ('record_type', RecordTypeEnum),
@@ -350,7 +368,9 @@ class ClassWithMembersMixin(object):
         :return: None
         """
         if isinstance(entry, (ClassWithMembersAndTypes,
-                              SystemClassWithMembersAndTypes)):
+                              ClassWithMembers,
+                              SystemClassWithMembersAndTypes,
+                              SystemClassWithMembers)):
             object_id = entry.class_info.object_id
         elif isinstance(entry, (BinaryObjectString, BinaryArray)):
             object_id = entry.object_id
@@ -383,6 +403,29 @@ class ClassWithMembersAndTypes(ClassWithMembersMixin,
         #: update references
         self._update_object_id_map(entry=self)
         self._initiate_members(stream)
+
+
+class SystemClassWithMembers(ClassWithMembersMixin,
+                             BinaryRecordStructure):
+    _fields_ = [
+        ('record_type', RecordTypeEnum),
+        ('class_info', ClassInfo)
+    ]
+
+    def _initiate(self, stream):
+        raise NotImplementedError("Yet not implemented")
+
+
+class ClassWithMembers(ClassWithMembersMixin,
+                       BinaryRecordStructure):
+    _fields_ = [
+        ('record_type', RecordTypeEnum),
+        ('class_info', ClassInfo),
+        ('library_id', c_int32)
+    ]
+
+    def _initiate(self, stream):
+        raise NotImplementedError("Yet not implemented")
 
 
 class MemberReference(BinaryRecordStructure):
@@ -445,6 +488,26 @@ class BinaryArray(BinaryRecordStructure):
         self.additional_type_info = additional_type_info
 
 
+class MemberPrimitiveTyped(BinaryRecordStructure):
+    _fields_ = [
+        ('record_type', RecordTypeEnum),
+        ('primitive_type', PrimitiveTypeEnum),
+        ('value_ptr', c_void_p)
+    ]
+
+    def _initiate(self, stream):
+        raise NotImplementedError("Yet not implemented")
+
+
+class MemberPrimitiveUnTyped(BinaryRecordStructure):
+    _fields_ = [
+        ('value_ptr', c_void_p)
+    ]
+
+    def _initiate(self, stream):
+        raise NotImplementedError("Yet not implemented")
+
+
 class ClassWithId(ClassWithMembersMixin,
                   BinaryRecordStructure):
     _fields_ = [
@@ -495,3 +558,13 @@ class ObjectNullMultiple256(BinaryRecordStructure):
         ('record_type', RecordTypeEnum),
         ('count', c_ubyte)
     ]
+
+
+class ObjectNullMultiple(BinaryRecordStructure):
+    _fields_ = [
+        ('record_type', RecordTypeEnum),
+        ('count', c_int32)
+    ]
+
+    def _initiate(self, stream):
+        raise NotImplementedError("Yet not implemented")
