@@ -12,4 +12,4 @@ from .structure import (
     Record
 )
 
-__all__ = ['BinaryDataStructureFile']
+__all__ = ['BinaryDataStructureFile', 'UDLGFile', 'Record']

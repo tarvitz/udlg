@@ -163,7 +163,8 @@ class AdditionalInfo(BinaryRecordStructure):
         """
         extracts value, caches it and get it back
 
-        :rtype: int | udlg.structure.common.ClassInfo | udlg.structure.common.LengthPrefixedString
+        :rtype: int | udlg.structure.common.ClassInfo |
+            udlg.structure.common.LengthPrefixedString
         :return: value
         """
         if not hasattr(self, '_value') and self.entry_ptr:

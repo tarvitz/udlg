@@ -15,7 +15,7 @@ class RecordTypeEnum(IntEnum):
     SystemClassWithMembers = 2,
     ClassWithMembers = 3,
     SystemClassWithMembersAndTypes = 4,
-    ClassWithMembersAndTypes =5,
+    ClassWithMembersAndTypes = 5,
     BinaryObjectString = 6,
     BinaryArray = 7,
     MemberPrimitiveTyped = 8,
@@ -95,6 +95,7 @@ class BinaryArrayTypeEnum(IntEnum):
     @classmethod
     def get_lower_bounds(cls):
         return cls.SingleOffset, cls.JaggedOffset, cls.RectangularOffset
+
 
 class MessageEnum(IntEnum):
     noArgs = 0x1,

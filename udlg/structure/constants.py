@@ -8,7 +8,7 @@
 """
 
 from ctypes import (
-    c_byte, c_ubyte, c_uint32, c_float, c_double, c_int16, c_int32, c_int64,
+    c_byte, c_ubyte, c_float, c_double, c_int16, c_int32, c_int64,
     c_uint16, c_uint32, c_uint64, c_bool, c_char
 )
 from .. enums import PrimitiveTypeEnum as PrimitiveTypeEnumeration
@@ -38,7 +38,7 @@ PrimitiveTypeConversionSet = {
     PrimitiveTypeEnumeration.Byte: 'B',  #: unsigned byte
     PrimitiveTypeEnumeration.Char: 'c',
     #: would raise TypeError as it should be implemented
-    #: decimal should be read as LengthPrefixedString yet ;\
+    #: decimal should be read as LengthPrefixedString yet ;/
     PrimitiveTypeEnumeration.Decimal: None,
     PrimitiveTypeEnumeration.Double: 'd',
     PrimitiveTypeEnumeration.Int16: 'h',
@@ -61,7 +61,7 @@ PrimitiveTypeCTypesConversionSet = {
     PrimitiveTypeEnumeration.Byte: c_ubyte,  #: unsigned byte
     PrimitiveTypeEnumeration.Char: c_char,
     #: would raise TypeError as it should be implemented
-    #: decimal should be read as LengthPrefixedString yet ;\
+    #: decimal should be read as LengthPrefixedString yet ;(
     PrimitiveTypeEnumeration.Decimal: None,
     PrimitiveTypeEnumeration.Double: c_double,
     PrimitiveTypeEnumeration.Int16: c_int16,

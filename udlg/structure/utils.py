@@ -12,7 +12,6 @@ from . constants import (
     BYTE_SIZE, PrimitiveTypeConversionSet, PrimitiveTypeCTypesConversionSet
 
 )
-from ..enums import PrimitiveTypeEnum
 
 
 def read_record_type(stream, seek_back=True):

@@ -35,7 +35,6 @@ class BinaryFormatterFileBuilder(object):
 
         #: id: info
         object_id_map = {}
-        reference_map = {}
         count = 0
         while True:
             record = Record()
