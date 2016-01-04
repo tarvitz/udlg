@@ -21,7 +21,7 @@
 from __future__ import unicode_literals
 
 from struct import unpack, calcsize
-from ctypes import c_int32, c_uint32, c_void_p, cast, pointer, POINTER
+from ctypes import c_int32, c_ubyte, c_uint32, c_void_p, cast, pointer, POINTER
 
 from .base import BinaryRecordStructure
 from .constants import (
@@ -488,3 +488,10 @@ class ClassWithId(ClassWithMembersMixin,
         )
         self.class_reference_type = class_record_type
         self.class_reference_ptr = class_reference.get_void_ptr()
+
+
+class ObjectNullMultiple256(BinaryRecordStructure):
+    _fields_ = [
+        ('record_type', RecordTypeEnum),
+        ('count', c_ubyte)
+    ]
