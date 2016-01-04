@@ -9,7 +9,7 @@
 from __future__ import unicode_literals
 
 import ctypes
-from ctypes import c_uint32, c_void_p, c_ubyte, cast, pointer, POINTER
+from ctypes import c_int32, c_uint32, c_void_p, c_ubyte, cast, pointer, POINTER
 from struct import unpack
 
 from .base import BinaryRecordStructure
@@ -17,7 +17,7 @@ from .constants import (
     BinaryTypeEnum, PrimitiveTypeEnum, RecordTypeEnum,
     PrimitiveTypeCTypesConversionSet,
     AdditionalInfoTypeEnum,
-    UINT32_SIZE, BYTE_SIZE
+    UINT32_SIZE, BYTE_SIZE, INT32_SIZE
 )
 from . import modules
 from .. utils import read_7bit_encoded_int_from_stream
@@ -29,6 +29,37 @@ class LengthPrefixedString(BinaryRecordStructure):
         ('size', ctypes.c_uint32),
         ('value', ctypes.c_wchar_p)
     ]
+
+    def __repr__(self):
+        if self.value:
+            return "'%s'" % self.value
+        return repr(self)
+
+    def __str__(self):
+        if self.value:
+            return self.value
+        return '<LengthPrefixedString at 0x%16x>' % id(self)
+
+    def __eq__(self, other):
+        return self.value == other
+
+    def __len__(self):
+        return len(self.value)
+
+    def __le__(self, other):
+        return self.value <= other
+
+    def __lt__(self, other):
+        return self.value < other
+
+    def __ge__(self, other):
+        return self.value >= other
+
+    def __gt__(self, other):
+        return self.value > other
+
+    def __ne__(self, other):
+        return self.value != other
 
     def _initiate(self, stream):
         """
@@ -80,21 +111,21 @@ class ArrayOfValueWithCode(ctypes.Structure):
 
 class ArrayInfo(BinaryRecordStructure):
     _fields_ = [
-        ('object_id', c_uint32),
+        ('object_id', c_int32),
         ('length', c_uint32)
     ]
 
 
 class ClassInfo(BinaryRecordStructure):
     _fields_ = [
-        ('object_id', c_uint32),
+        ('object_id', c_int32),
         ('name', LengthPrefixedString),
         ('members_count', c_uint32),
         ('members_names', POINTER(LengthPrefixedString))
     ]
 
     def _initiate(self, stream):
-        self.object_id, = unpack('I', stream.read(UINT32_SIZE))
+        self.object_id, = unpack('i', stream.read(INT32_SIZE))
         self.name = LengthPrefixedString()
         self.name._initiate(stream)
         self.members_count, = unpack('I', stream.read(UINT32_SIZE))
@@ -135,7 +166,7 @@ class AdditionalInfo(BinaryRecordStructure):
         :rtype: int | udlg.structure.common.ClassInfo | udlg.structure.common.LengthPrefixedString
         :return: value
         """
-        if not hasattr(self, '_value'):
+        if not hasattr(self, '_value') and self.entry_ptr:
             AdditionalInfoTypeEnum = enums.AdditionalInfoTypeEnum
             if self.type in (AdditionalInfoTypeEnum.PrimitiveTypeEnum,
                              AdditionalInfoTypeEnum.PrimitiveArrayTypeEnum):
@@ -151,6 +182,8 @@ class AdditionalInfo(BinaryRecordStructure):
                 raise TypeError(
                     "Wrong additional type format stored: %i" % self.type
                 )
+        elif not self.entry_ptr:
+            return None
         return self._value
 
     def assign_entry(self, entry):

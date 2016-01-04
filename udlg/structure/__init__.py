@@ -7,7 +7,7 @@
 .. sectionauthor:: Nickolas Fox <tarvitz@blacklibary.ru>
 """
 from .structure import (
-    BinaryDataStructureFile,
+    BinaryDataStructureFile, UDLGFile,
     #: structures
     Record
 )

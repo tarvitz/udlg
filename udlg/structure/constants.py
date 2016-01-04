@@ -27,6 +27,7 @@ BinaryArrayTypeEnum = c_ubyte
 BYTE_SIZE = 1
 INT_SIZE = 4
 UINT_SIZE = 4
+INT32_SIZE = 4
 UINT32_SIZE = 4
 UINT64_SIZE = 8
 

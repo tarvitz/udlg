@@ -8,7 +8,7 @@
 """
 from . import structure
 from .enums import RecordTypeEnum
-from .structure import Record
+from .structure import Record, UDLGFile
 
 
 class BinaryFormatterFileBuilder(object):
@@ -36,36 +36,26 @@ class BinaryFormatterFileBuilder(object):
         #: id: info
         object_id_map = {}
         reference_map = {}
+        count = 0
         while True:
             record = Record()
+            record._object_id_map = object_id_map
+            record._reference_map = reference_map
             record._initiate(stream=stream, object_id_map=object_id_map,
                              reference_map=reference_map)
             append(record)
+            count += 1
             if record.record_type == RecordTypeEnum.MessageEnd:
                 break
         document.records = (Record * len(records))(*records)
+        document.count = count
         return document
 
 
-class UDLGBuilder(object):
-    def __init__(self, filename=''):
-        """
-
-        :param str filename: filename to open
-        :param stream:
-        :return:
-        """
-        self.stream = open(filename, 'rb')
-
-    def __del__(self):
-        self.stream.close()
-        super(UDLGBuilder, self).__del__()
-
+class UDLGBuilder(BinaryFormatterFileBuilder):
     @classmethod
     def build(cls, stream):
-        document = structure.UDLG()
-        document.start._initiate(stream)
-        document.header._initiate(stream)
+        document = UDLGFile()
+        document._initiate(stream)
+        document.data = super(UDLGBuilder, cls).build(stream)
         return document
-
-

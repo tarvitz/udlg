@@ -21,12 +21,12 @@
 from __future__ import unicode_literals
 
 from struct import unpack, calcsize
-from ctypes import c_uint32, c_void_p, c_ubyte, cast, pointer, POINTER
+from ctypes import c_int32, c_uint32, c_void_p, cast, pointer, POINTER
 
 from .base import BinaryRecordStructure
 from .constants import (
     RecordTypeEnum, PrimitiveTypeEnum, BinaryTypeEnum, BinaryArrayTypeEnum,
-    BYTE_SIZE, UINT32_SIZE,
+    BYTE_SIZE, UINT32_SIZE, INT32_SIZE,
     PrimitiveTypeCTypesConversionSet, PrimitiveTypeConversionSet,
 )
 from .common import (
@@ -49,7 +49,7 @@ class MessageEnd(BinaryRecordStructure):
 class BinaryObjectString(BinaryRecordStructure):
     _fields_ = [
         ('record_type', RecordTypeEnum),
-        ('object_id', c_uint32),
+        ('object_id', c_int32),
         ('value', LengthPrefixedString)
     ]
 
@@ -266,7 +266,7 @@ class ClassWithMembersMixin(object):
         :rtype: list
         :return: member list
         """
-        class_info = class_info or getattr(self, class_info, None)
+        class_info = class_info or getattr(self, 'class_info', None)
         if not hasattr(self, '_members'):
             self._members = []
             append = self._members.append
@@ -324,6 +324,12 @@ class ClassWithMembersMixin(object):
                     enums.RecordTypeEnum(record_type).name
                 ]
                 member_record = member_record_class()
+                self._update_object_id_map(member_record)
+                #: store reference link to reference map
+                if isinstance(member_record, MemberReference):
+                    self._update_reference_map(member_record)
+                member_record._object_id_map = self._object_id_map
+                member_record._reference_map = self._reference_map
                 member_record._initiate(stream)
                 member_entry = MemberEntry(
                     binary_type=binary_type, primitive_type=0,
@@ -333,6 +339,38 @@ class ClassWithMembersMixin(object):
             append(member_entry)
         members_array = (MemberEntry * members_count)(*members)
         self.members_ptr = members_array
+
+    def _update_reference_map(self, entry):
+        """
+        update reference map with new reference entry
+
+        :param int id_ref: id reference
+        :param udlg.structure.records.MemberReference entry:
+            record member reference entry
+        :rtype: None
+        :return: None
+        """
+        self._reference_map[entry.id_ref] = entry.get_void_ptr()
+
+    def _update_object_id_map(self, entry):
+        """
+        update object id map with new reference entry
+
+        :param int id_ref: id reference
+        :param udlg.structure.records.MemberReference entry:
+            record member reference entry
+        :rtype: None
+        :return: None
+        """
+        if isinstance(entry, (ClassWithMembersAndTypes,
+                              SystemClassWithMembersAndTypes)):
+            object_id = entry.class_info.object_id
+        elif isinstance(entry, (BinaryObjectString, BinaryArray)):
+            object_id = entry.object_id
+        else:
+            return
+        self._object_id_map[object_id] = (entry.record_type,
+                                          entry.get_void_ptr())
 
 
 class ClassWithMembersAndTypes(ClassWithMembersMixin,
@@ -354,6 +392,11 @@ class ClassWithMembersAndTypes(ClassWithMembersMixin,
             stream, amount=self.class_info.members_count
         )
         self.library_id, = unpack('I', stream.read(UINT32_SIZE))
+
+        #: update references
+        self._update_object_id_map(entry=self)
+        if isinstance(self, MemberReference):
+            self._update_reference_map(self)
         self._initiate_members(stream)
 
 
@@ -373,7 +416,7 @@ class ObjectNull(BinaryRecordStructure):
 class BinaryArray(BinaryRecordStructure):
     _fields_ = [
         ('record_type', RecordTypeEnum),
-        ('object_id', c_uint32),
+        ('object_id', c_int32),
         ('binary_type', BinaryArrayTypeEnum),
         ('rank', c_uint32),
         ('lengths', POINTER(c_uint32)),
@@ -384,7 +427,7 @@ class BinaryArray(BinaryRecordStructure):
 
     def _initiate(self, stream):
         self.record_type, = unpack('b', stream.read(BYTE_SIZE))
-        self.object_id, = unpack('I', stream.read(UINT32_SIZE))
+        self.object_id, = unpack('i', stream.read(INT32_SIZE))
         self.binary_type, = unpack('b', stream.read(BYTE_SIZE))
         self.rank, = unpack('I', stream.read(UINT32_SIZE))
         lengths = unpack(
@@ -421,29 +464,14 @@ class ClassWithId(ClassWithMembersMixin,
                   BinaryRecordStructure):
     _fields_ = [
         ('record_type', RecordTypeEnum),
-        ('object_id', c_uint32),
-        ('metadata_id', c_uint32),
-        ('members_ptr', POINTER(MemberEntry)),
+        ('object_id', c_int32),
+        ('metadata_id', c_int32),
+
         #: skip it on read
+        ('members_ptr', POINTER(MemberEntry)),
         ('class_reference_type', RecordTypeEnum),
         ('class_reference_ptr', c_void_p)
     ]
-
-    def _initiate(self, stream):
-        self.record_type, = unpack('b', stream.read(BYTE_SIZE))
-        self.object_id, self.metadata_id = unpack(
-            '2I', stream.read(UINT32_SIZE * 2)
-        )
-        reference = cast(self._reference_map[self.metadata_id],
-                         POINTER(MemberReference)).contents
-        class_record_type, class_ptr = self._object_id_map[reference.id_ref]
-        class_entry = globals()[enums.RecordTypeEnum(class_record_type).name]
-        class_reference = cast(class_ptr, POINTER(class_entry)).contents
-        self._initiate_members(
-            stream, class_reference=class_reference
-        )
-        self.class_reference_type = class_record_type
-        self.class_reference_ptr = class_reference.get_void_ptr()
 
     def get_class_reference(self):
         if not hasattr(self, '_class_reference'):
@@ -460,3 +488,24 @@ class ClassWithId(ClassWithMembersMixin,
             class_reference = self.get_class_reference()
             class_info = class_reference.class_info
         return super(ClassWithId, self).get_member_list(class_info=class_info)
+
+    def _initiate(self, stream):
+        self.record_type, = unpack('b', stream.read(BYTE_SIZE))
+        object_id, metadata_id = unpack('2i', stream.read(INT32_SIZE * 2))
+        self.object_id, self.metadata_id = object_id, metadata_id
+        #: wtf?
+        # reference = cast(self._reference_map[self.metadata_id],
+        #                  POINTER(MemberReference)).contents
+        # class_record_type, class_ptr = self._object_id_map[
+        #     reference.id_ref
+        # ]
+        class_record_type, class_ptr = self._object_id_map[self.metadata_id]
+        class_entry = globals()[
+            enums.RecordTypeEnum(class_record_type).name
+        ]
+        class_reference = cast(class_ptr, POINTER(class_entry)).contents
+        self._initiate_members(
+            stream, class_reference=class_reference
+        )
+        self.class_reference_type = class_record_type
+        self.class_reference_ptr = class_reference.get_void_ptr()

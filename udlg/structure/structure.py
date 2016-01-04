@@ -11,19 +11,21 @@ from __future__ import unicode_literals
 import ctypes
 from struct import unpack
 from ctypes import (
-    c_uint32, c_uint64, c_int32, c_byte, c_ubyte, c_char_p,
+    c_uint32, c_uint64, c_int32, c_byte, c_ubyte,
     POINTER, sizeof, cast,
 )
 from .constants import (
     BYTE_SIZE, INT_SIZE, RecordTypeEnum
 )
-from .modules import RECORDS_MODULE
+# from .modules import RECORDS_MODULE
+from . import records
 from .utils import read_record_type
 from .. import enums
 
 SAFE_SIZES = [
     c_uint64, c_byte, c_uint32
 ]
+SIGNATURE_SIZE = 24
 
 
 def safe_size_of(c_type):
@@ -53,7 +55,6 @@ class SerializationHeader(ctypes.Structure):
         :rtype: None
         :return: None
         """
-        stream.seek(0)
         record_type, = unpack('b', stream.read(BYTE_SIZE))
         root_id, header_id, major_version, minor_version = unpack(
             '4i', stream.read(INT_SIZE * 4)
@@ -71,9 +72,13 @@ class Record(ctypes.Structure):
         ('entry_ptr', ctypes.c_void_p)
     )
 
-    def __init__(self, *args, **kwargs):
-        self._entry = None
-        super(Record, self).__init__(*args, **kwargs)
+    def __str__(self):
+        return '<Record: at 0x%16x>' % id(self)
+
+    def __repr__(self):
+        if self.record_type:
+            return repr(self.entry)
+        return self.__str__()
 
     @property
     def entry(self):
@@ -87,7 +92,7 @@ class Record(ctypes.Structure):
             record_type = self.record_type
             RecordType = enums.RecordTypeEnum
             class_name = RecordType(record_type).name
-            record_class = getattr(RECORDS_MODULE, class_name, self.__class__)
+            record_class = getattr(records, class_name, self.__class__)
             pointer_type = POINTER(record_class)
             self._entry = cast(self.entry_ptr, pointer_type).contents
         return self._entry
@@ -107,33 +112,71 @@ class Record(ctypes.Structure):
         """
         self.record_type = read_record_type(stream)
         record_class_name = enums.RecordTypeEnum(self.record_type).name
-        record_entry_class = getattr(RECORDS_MODULE, record_class_name)
+        record_entry_class = getattr(records, record_class_name)
         record_entry = record_entry_class()
         record_entry._object_id_map = object_id_map
         record_entry._reference_map = reference_map
         record_entry._initiate(stream)
 
+        #: todo make it fixed
+        self._update_references_map(record_entry, object_id_map=object_id_map,
+                                    reference_map=reference_map)
+
+        entry_void_ptr = record_entry.get_void_ptr()
+        self.entry_ptr = entry_void_ptr
+
+    def _update_references_map(self, entry, **attrs):
+        """
+
+        :param entry:
+        :return:
+        """
         #: todo something that should be reassemble
-        if hasattr(record_entry, 'class_info'):
+        object_id_map = attrs.get('object_id_map', {})
+        reference_map = attrs.get('reference_map', {})
+        if isinstance(entry, (records.ClassWithMembersAndTypes,
+                              records.SystemClassWithMembersAndTypes)):
             object_id_map.update({
-                record_entry.class_info.object_id: (
-                    record_entry.record_type,
-                    record_entry.get_void_ptr()
+                entry.class_info.object_id: (
+                    entry.record_type,
+                    entry.get_void_ptr()
                 )
             })
-        elif hasattr(record_entry, 'id_ref'):
+        elif isinstance(entry, (records.BinaryArray,
+                                records.BinaryObjectString)):
+            object_id_map.update({
+                entry.object_id: (entry.record_type, entry.get_void_ptr())
+            })
+        elif isinstance(entry, records.MemberReference):
             reference_map.update({
-                record_entry.id_ref: record_entry.get_void_ptr()
+                entry.id_ref: entry.get_void_ptr()
             })
         else:
             pass
 
-        entry_void_ptr = record_entry.get_void_ptr()
-        self.entry_ptr = entry_void_ptr
+
+class UDLGHeader(ctypes.Structure):
+    _fields_ = [
+        ('signature', (c_byte * SIGNATURE_SIZE))
+    ]
 
 
 class BinaryDataStructureFile(ctypes.Structure):
     _fields_ = [
         ('header', SerializationHeader),
-        ('records', POINTER(Record))
+        ('records', POINTER(Record)),
+        ('count', c_uint32)
     ]
+
+
+class UDLGFile(ctypes.Structure):
+    _fields_ = [
+        ('header', UDLGHeader),
+        ('data', BinaryDataStructureFile)
+    ]
+
+    def _initiate(self, stream):
+        header = UDLGHeader()
+        signature = unpack('%ib' % SIGNATURE_SIZE, stream.read(SIGNATURE_SIZE))
+        header.signature = (c_byte * SIGNATURE_SIZE)(*signature)
+        self.header = header

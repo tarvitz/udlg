@@ -11,6 +11,10 @@ from ctypes import Structure, cast, pointer, c_void_p, _SimpleCData, _Pointer
 
 
 class BinaryRecordStructure(Structure):
+    def __repr__(self):
+        return '<%s at 0x%08x>' % (self.__class__.__name__,
+                                   id(self))
+
     def get_void_ptr(self):
         return cast(pointer(self), c_void_p)
 
