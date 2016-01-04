@@ -121,20 +121,26 @@ class ClassInfo(BinaryRecordStructure):
         ('object_id', c_int32),
         ('name', LengthPrefixedString),
         ('members_count', c_uint32),
-        ('members_names', POINTER(LengthPrefixedString))
+        ('members_names_ptr', POINTER(LengthPrefixedString))
     ]
 
     def to_dict(self):
+        names = [self.members_names_ptr[i] for i in range(self.members_count)]
         return {
             'object_id': self.object_id,
             'name': self.name.to_dict(),
             'members_count': self.members_count,
-            #: todo make it work
-            # 'members_names': [
-            #     self.members_names[i].to_dict()
-            #     for i in range(self.members_count)
-            # ]
+            'members_names': [x.to_dict() for x in names]
         }
+
+    @property
+    def members_names(self):
+        return self.get_members_names()
+
+    def get_members_names(self):
+        if not hasattr(self, '_members_names'):
+            self._members_names = self.members_names_ptr[:self.members_count]
+        return self._members_names
 
     def _initiate(self, stream):
         self.object_id, = unpack('i', stream.read(INT32_SIZE))
