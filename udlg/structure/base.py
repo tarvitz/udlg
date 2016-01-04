@@ -10,7 +10,24 @@ from struct import unpack, calcsize
 from ctypes import Structure, cast, pointer, c_void_p, _SimpleCData, _Pointer
 
 
-class BinaryRecordStructure(Structure):
+class SimpleToDictMixin(object):
+    def to_dict(self):
+        document = {}
+        for field_name, field_type in self._fields_:
+            entry = getattr(self, field_name.replace('_ptr', ''))
+            if isinstance(entry, list):
+                value = [
+                    x.to_dict() if hasattr(x, 'to_dict') else x for x in entry
+                ]
+            else:
+                value = entry.to_dict() if hasattr(entry, 'to_dict') else entry
+            document.update({
+                field_name.replace('_ptr', ''): value
+            })
+        return document
+
+
+class BinaryRecordStructure(SimpleToDictMixin, Structure):
     def __repr__(self):
         return '<%s at 0x%08x>' % (self.__class__.__name__,
                                    id(self))

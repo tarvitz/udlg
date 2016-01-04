@@ -17,6 +17,7 @@ from ctypes import (
 from .constants import (
     BYTE_SIZE, INT_SIZE, RecordTypeEnum
 )
+from .base import SimpleToDictMixin
 from . import records
 from .utils import read_record_type
 from .. import enums
@@ -31,7 +32,7 @@ def safe_size_of(c_type):
     return c_type in SAFE_SIZES and sizeof(c_type) or 0
 
 
-class SerializationHeader(ctypes.Structure):
+class SerializationHeader(SimpleToDictMixin, ctypes.Structure):
     _fields_ = [
         #: enums.RecordTypeEnum
         ('record_type', c_ubyte),
@@ -65,11 +66,15 @@ class SerializationHeader(ctypes.Structure):
         self.minor_version = minor_version
 
 
-class Record(ctypes.Structure):
+class Record(SimpleToDictMixin, ctypes.Structure):
     _fields_ = (
         ('record_type', RecordTypeEnum),
         ('entry_ptr', ctypes.c_void_p)
     )
+
+    def __init__(self, *args, **kwargs):
+        self._entry = None
+        super(Record, self).__init__(*args, **kwargs)
 
     def __str__(self):
         return '<Record: at 0x%16x>' % id(self)
@@ -78,6 +83,13 @@ class Record(ctypes.Structure):
         if self.record_type:
             return repr(self.entry)
         return self.__str__()
+
+    @property
+    def members(self):
+        entry = self.entry
+        if hasattr(entry, 'members'):
+            return entry.members
+        return []
 
     @property
     def entry(self):
@@ -146,21 +158,33 @@ class Record(ctypes.Structure):
             pass
 
 
-class UDLGHeader(ctypes.Structure):
+class UDLGHeader(SimpleToDictMixin, ctypes.Structure):
     _fields_ = [
-        ('signature', (c_byte * SIGNATURE_SIZE))
+        ('unknown_1', c_uint32),
+        ('unknown_2', c_uint32),
+        ('unknown_3', c_uint32),
+        ('unknown_4', c_uint32),
+        ('unknown_5', c_uint32),
+        ('unknown_6', c_uint32),
     ]
 
 
-class BinaryDataStructureFile(ctypes.Structure):
+class BinaryDataStructureFile(SimpleToDictMixin, ctypes.Structure):
     _fields_ = [
         ('header', SerializationHeader),
-        ('records', POINTER(Record)),
+        ('records_ptr', POINTER(Record)),
         ('count', c_uint32)
     ]
 
+    @property
+    def records(self):
+        return self.get_record_list()
 
-class UDLGFile(ctypes.Structure):
+    def get_record_list(self):
+        return self.records_ptr[:self.count]
+
+
+class UDLGFile(SimpleToDictMixin, ctypes.Structure):
     _fields_ = [
         ('header', UDLGHeader),
         ('data', BinaryDataStructureFile)
@@ -168,6 +192,25 @@ class UDLGFile(ctypes.Structure):
 
     def _initiate(self, stream):
         header = UDLGHeader()
-        signature = unpack('%ib' % SIGNATURE_SIZE, stream.read(SIGNATURE_SIZE))
-        header.signature = (c_byte * SIGNATURE_SIZE)(*signature)
+        for i in range(6):
+            data, = unpack('I', stream.read(INT_SIZE))
+            setattr(header, 'unknown_%i' % i, data)
         self.header = header
+
+    def unpack_i18n(self):
+        """
+        unpacks i18n strings
+
+        :rtype: str
+        :return: i18n strings with \n sign separated
+        """
+        i18n = []
+        append = i18n.append
+        record_list = self.data.records
+        for idx, record in enumerate(record_list):
+            for jdx, member in enumerate(record.members):
+                if isinstance(member, records.BinaryObjectString):
+                    append(
+                        "%i,%i=>%s" % (idx, jdx, member)
+                    )
+        return "\n".join(i18n)

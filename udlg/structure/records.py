@@ -104,7 +104,7 @@ class SystemClassWithMembersAndTypes(BinaryRecordStructure):
         ('record_type', RecordTypeEnum),
         ('class_info', ClassInfo),
         ('member_type_info', MemberTypeInfo),
-        ('members', POINTER(MemberEntry)),
+        ('members_ptr', POINTER(MemberEntry)),
     ]
 
     def _initiate(self, stream):
@@ -144,7 +144,7 @@ class SystemClassWithMembersAndTypes(BinaryRecordStructure):
                 value = read_primitive_type_from_stream(stream, primitive_type)
                 append(self._create_member_entry(value, additional_info,
                                                  member_type))
-            elif member_type == AdditionalInfoTypeEnum.ClassInfo:
+            elif member_type == AdditionalInfoTypeEnum.ClassTypeInfo:
                 raise NotImplementedError("Not implemented")
             elif member_type == AdditionalInfoTypeEnum.LengthPrefixedString:
                 raise NotImplementedError("Not implemented")
@@ -153,7 +153,7 @@ class SystemClassWithMembersAndTypes(BinaryRecordStructure):
                     "Wrong type for members were given: %i" % member_type
                 )
         #: assign members
-        self.members = (MemberEntry * len(member_list))(*member_list)
+        self.members_ptr = (MemberEntry * len(member_list))(*member_list)
 
     def _create_member_entry(self, value, additional_info, member_type):
         """
@@ -195,6 +195,10 @@ class SystemClassWithMembersAndTypes(BinaryRecordStructure):
 
     @property
     def member_list(self):
+        return self.get_member_list()
+
+    @property
+    def members(self):
         return self.get_member_list()
 
 
@@ -379,6 +383,10 @@ class ClassWithMembersMixin(object):
         self._object_id_map[object_id] = (entry.record_type,
                                           entry.get_void_ptr())
 
+    @property
+    def members(self):
+        return self.get_member_list()
+
 
 class ClassWithMembersAndTypes(ClassWithMembersMixin,
                                BinaryRecordStructure):
@@ -530,6 +538,10 @@ class ClassWithId(ClassWithMembersMixin,
             self._class_reference = cast(self.class_reference_ptr,
                                          POINTER(class_type)).contents
         return self._class_reference
+
+    @property
+    def class_reference(self):
+        return self.get_class_reference()
 
     def get_member_list(self, class_info=None):
         if class_info is None:

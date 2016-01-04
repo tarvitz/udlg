@@ -44,7 +44,7 @@ class BinaryFormatterFileBuilder(object):
             count += 1
             if record.record_type == RecordTypeEnum.MessageEnd:
                 break
-        document.records = (Record * len(records))(*records)
+        document.records_ptr = (Record * len(records))(*records)
         document.count = count
         return document
 

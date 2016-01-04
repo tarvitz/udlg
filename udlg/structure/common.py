@@ -124,6 +124,18 @@ class ClassInfo(BinaryRecordStructure):
         ('members_names', POINTER(LengthPrefixedString))
     ]
 
+    def to_dict(self):
+        return {
+            'object_id': self.object_id,
+            'name': self.name.to_dict(),
+            'members_count': self.members_count,
+            #: todo make it work
+            # 'members_names': [
+            #     self.members_names[i].to_dict()
+            #     for i in range(self.members_count)
+            # ]
+        }
+
     def _initiate(self, stream):
         self.object_id, = unpack('i', stream.read(INT32_SIZE))
         self.name = LengthPrefixedString()
@@ -136,7 +148,7 @@ class ClassInfo(BinaryRecordStructure):
             member._initiate(stream)
             append(member)
         names = (LengthPrefixedString * len(member_names))(*member_names)
-        self.members_names = names
+        self.members_names_ptr = names
 
 
 class ClassTypeInfo(BinaryRecordStructure):
@@ -158,6 +170,16 @@ class AdditionalInfo(BinaryRecordStructure):
         ('entry_ptr', c_void_p),
     ]
 
+    def to_dict(self):
+        value = (
+            self.value.to_dict()
+            if (self.value and hasattr(self.value, 'to_dict')) else self.value
+        )
+        return {
+            'type': self.type,
+            'value': value
+        }
+
     @property
     def value(self):
         """
@@ -174,11 +196,12 @@ class AdditionalInfo(BinaryRecordStructure):
                 self._value = cast(
                     self.entry_ptr, POINTER(c_ubyte * 1)
                 ).contents[0]
-            elif self.type == AdditionalInfoTypeEnum.ClassInfo:
-                self._value = cast(POINTER(ClassInfo), self.entry_ptr)
+            elif self.type == AdditionalInfoTypeEnum.ClassTypeInfo:
+                self._value = cast(self.entry_ptr,
+                                   POINTER(ClassTypeInfo)).contents
             elif self.type == AdditionalInfoTypeEnum.LengthPrefixedString:
-                self._value = cast(POINTER(LengthPrefixedString),
-                                   self.entry_ptr)
+                self._value = cast(self.entry_ptr,
+                                   POINTER(LengthPrefixedString)).contents
             else:
                 raise TypeError(
                     "Wrong additional type format stored: %i" % self.type
@@ -219,9 +242,23 @@ class AdditionalInfo(BinaryRecordStructure):
 
 class MemberTypeInfo(BinaryRecordStructure):
     _fields_ = [
+        ('count', c_uint32),
         ('types', POINTER(BinaryTypeEnum)),
         ('additional_info', POINTER(AdditionalInfo))
     ]
+
+    def to_dict(self):
+        types = self.types
+        info = self.additional_info
+        count = self.count
+        return {
+            'types': [
+                types[i] for i in range(count)
+            ],
+            'additional_info': [
+                info[i].to_dict() for i in range(count)
+            ]
+        }
 
     def _initiate(self, stream, amount=0):
         """
@@ -234,6 +271,7 @@ class MemberTypeInfo(BinaryRecordStructure):
         :return: None
         """
         # types and additional info are
+        self.count = amount
         types = unpack('%ib' % amount, stream.read(amount))
         self.types = (BinaryTypeEnum * amount)(*types)
         additional_infoes = []
