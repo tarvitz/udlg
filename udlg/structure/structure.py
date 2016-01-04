@@ -17,7 +17,6 @@ from ctypes import (
 from .constants import (
     BYTE_SIZE, INT_SIZE, RecordTypeEnum
 )
-# from .modules import RECORDS_MODULE
 from . import records
 from .utils import read_record_type
 from .. import enums
@@ -97,7 +96,7 @@ class Record(ctypes.Structure):
             self._entry = cast(self.entry_ptr, pointer_type).contents
         return self._entry
 
-    def _initiate(self, stream, object_id_map, reference_map):
+    def _initiate(self, stream, object_id_map):
         """
         initiate instance fields (construct) from stream
 
@@ -115,25 +114,21 @@ class Record(ctypes.Structure):
         record_entry_class = getattr(records, record_class_name)
         record_entry = record_entry_class()
         record_entry._object_id_map = object_id_map
-        record_entry._reference_map = reference_map
         record_entry._initiate(stream)
 
         #: todo make it fixed
-        self._update_references_map(record_entry, object_id_map=object_id_map,
-                                    reference_map=reference_map)
+        self._update_object_id_map(record_entry, object_id_map)
 
         entry_void_ptr = record_entry.get_void_ptr()
         self.entry_ptr = entry_void_ptr
 
-    def _update_references_map(self, entry, **attrs):
+    def _update_object_id_map(self, entry, object_id_map):
         """
 
         :param entry:
         :return:
         """
         #: todo something that should be reassemble
-        object_id_map = attrs.get('object_id_map', {})
-        reference_map = attrs.get('reference_map', {})
         if isinstance(entry, (records.ClassWithMembersAndTypes,
                               records.SystemClassWithMembersAndTypes)):
             object_id_map.update({
@@ -146,10 +141,6 @@ class Record(ctypes.Structure):
                                 records.BinaryObjectString)):
             object_id_map.update({
                 entry.object_id: (entry.record_type, entry.get_void_ptr())
-            })
-        elif isinstance(entry, records.MemberReference):
-            reference_map.update({
-                entry.id_ref: entry.get_void_ptr()
             })
         else:
             pass

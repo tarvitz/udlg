@@ -327,9 +327,8 @@ class ClassWithMembersMixin(object):
                 self._update_object_id_map(member_record)
                 #: store reference link to reference map
                 if isinstance(member_record, MemberReference):
-                    self._update_reference_map(member_record)
+                    self._update_object_id_map(member_record)
                 member_record._object_id_map = self._object_id_map
-                member_record._reference_map = self._reference_map
                 member_record._initiate(stream)
                 member_entry = MemberEntry(
                     binary_type=binary_type, primitive_type=0,
@@ -339,18 +338,6 @@ class ClassWithMembersMixin(object):
             append(member_entry)
         members_array = (MemberEntry * members_count)(*members)
         self.members_ptr = members_array
-
-    def _update_reference_map(self, entry):
-        """
-        update reference map with new reference entry
-
-        :param int id_ref: id reference
-        :param udlg.structure.records.MemberReference entry:
-            record member reference entry
-        :rtype: None
-        :return: None
-        """
-        self._reference_map[entry.id_ref] = entry.get_void_ptr()
 
     def _update_object_id_map(self, entry):
         """
@@ -395,8 +382,6 @@ class ClassWithMembersAndTypes(ClassWithMembersMixin,
 
         #: update references
         self._update_object_id_map(entry=self)
-        if isinstance(self, MemberReference):
-            self._update_reference_map(self)
         self._initiate_members(stream)
 
 
@@ -493,12 +478,6 @@ class ClassWithId(ClassWithMembersMixin,
         self.record_type, = unpack('b', stream.read(BYTE_SIZE))
         object_id, metadata_id = unpack('2i', stream.read(INT32_SIZE * 2))
         self.object_id, self.metadata_id = object_id, metadata_id
-        #: wtf?
-        # reference = cast(self._reference_map[self.metadata_id],
-        #                  POINTER(MemberReference)).contents
-        # class_record_type, class_ptr = self._object_id_map[
-        #     reference.id_ref
-        # ]
         class_record_type, class_ptr = self._object_id_map[self.metadata_id]
         class_entry = globals()[
             enums.RecordTypeEnum(class_record_type).name

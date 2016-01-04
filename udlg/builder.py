@@ -40,9 +40,7 @@ class BinaryFormatterFileBuilder(object):
         while True:
             record = Record()
             record._object_id_map = object_id_map
-            record._reference_map = reference_map
-            record._initiate(stream=stream, object_id_map=object_id_map,
-                             reference_map=reference_map)
+            record._initiate(stream=stream, object_id_map=object_id_map)
             append(record)
             count += 1
             if record.record_type == RecordTypeEnum.MessageEnd:
