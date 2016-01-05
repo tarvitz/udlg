@@ -61,6 +61,11 @@ class BinaryObjectString(BinaryRecordStructure):
         ('value', LengthPrefixedString)
     ]
 
+    #: todo make it more pythonic
+    def set(self, value):
+        self.value.value = value
+        self.value.size = len(value)
+
     def __str__(self):
         return "'%s'" % (self.value.value or '')
 
@@ -93,9 +98,6 @@ class BinaryObjectString(BinaryRecordStructure):
             yield i
 
     def __add__(self, other):
-        raise NotImplementedError("Not implemented yet")
-
-    def __set__(self, instance, value):
         raise NotImplementedError("Not implemented yet")
 
 

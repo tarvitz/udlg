@@ -14,7 +14,7 @@ from unittest import TestCase
 
 
 @allure.feature('UDLG')
-class BinaryFormatterFileTest(TestCase):
+class UDLGFileTest(TestCase):
     def setUp(self):
         self.cc_dog_in_motion = open('tests/documents/cc_dogInMotion.udlg',
                                      'rb')
@@ -47,3 +47,14 @@ class BinaryFormatterFileTest(TestCase):
         instance = UDLGBuilder.build(self.lucas)
         with allure.step('check records'):
             self.assertEqual(instance.data.count, 96)
+
+    @allure.story('')
+    def test_length_prefixed_string_modify(self):
+        instance = UDLGBuilder.build(self.lucas)
+        with allure.step('modify string'):
+            entry = instance.data.records[5].members[2]
+            entry.set("Another string to set")
+        with allure.step('check'):
+            #: still binary object string
+            self.assertIsInstance(entry, records.BinaryObjectString)
+            self.assertEqual(entry.value, "Another string to set")
