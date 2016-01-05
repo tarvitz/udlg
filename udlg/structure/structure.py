@@ -222,7 +222,7 @@ class UDLGFile(SimpleSerializerMixin, ctypes.Structure):
                 if isinstance(member, records.BinaryObjectString):
                     content = member.value.value
                     append(
-                        b"%i,%i=>'%s'" % (idx, jdx, content.encode('utf-8'))
+                        b"%i,%i=>'%s'" % (idx, jdx, content)
                     )
         return b"\n".join(i18n)
 

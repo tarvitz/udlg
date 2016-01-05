@@ -15,6 +15,7 @@ def unpack(entry, opts):
         store_path = os.path.join(
             opts.output_dir, entry.path.split(opts.dialogs_dir)[-1][1:]
         )
+        store_path = store_path.replace('\\', '/')
         i18n_path, file_name = store_path.rsplit('/', 1)
         if not os.path.exists(i18n_path):
             os.makedirs(i18n_path)
@@ -23,7 +24,7 @@ def unpack(entry, opts):
         if not(opts.skip_processed and os.path.exists(store_path)):
             print("Processing: %s" % entry.path)
             u = UDLGBuilder.build(stream)
-            open(store_path, 'w').write(u.unpack_i18n())
+            open(store_path, 'wb').write(u.unpack_i18n())
         else:
             print("Skipping: %s" % entry.path)
 
