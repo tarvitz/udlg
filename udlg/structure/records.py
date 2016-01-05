@@ -30,7 +30,7 @@ from __future__ import unicode_literals
 
 from struct import unpack, calcsize
 from ctypes import (
-    c_int32, c_ubyte, c_uint32, c_void_p, c_wchar_p, cast, pointer,
+    c_int32, c_ubyte, c_uint32, c_void_p, cast, pointer,
     POINTER
 )
 
