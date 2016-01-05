@@ -217,7 +217,8 @@ class UDLGFile(SimpleSerializerMixin, ctypes.Structure):
         for idx, record in enumerate(record_list):
             for jdx, member in enumerate(record.members):
                 if isinstance(member, records.BinaryObjectString):
+                    content = member.value.value
                     append(
-                        "%i,%i=>%s" % (idx, jdx, member)
+                        b"%i,%i=>%s" % (idx, jdx, content.encode('utf-8'))
                     )
-        return "\n".join(i18n)
+        return b"\n".join(i18n)
