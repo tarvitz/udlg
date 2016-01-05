@@ -29,20 +29,23 @@ from .. import enums
 class LengthPrefixedString(BinaryRecordStructure):
     _fields_ = [
         ('size', ctypes.c_uint32),
-        ('value', ctypes.c_wchar_p)
+        ('value', ctypes.c_char_p)
     ]
 
     def to_bin(self):
         document = bytearray()
-        value = bytes(self.value.encode('utf-8'))
+        value = bytes(self.value)
         size = write_7bit_int(self.size)
         document.extend(pack('%is' % len(size), size))
         document.extend(pack('%is' % self.size, value))
         return document
 
     def set(self, value):
-        self.value = value
-        self.size = len(value.encode('utf-8'))
+        if self.value != value:
+            if isinstance(value, str):
+                value = value.encode('utf-8')
+            self.value = value
+            self.size = len(value)
 
     def __repr__(self):
         if self.value:
@@ -90,7 +93,7 @@ class LengthPrefixedString(BinaryRecordStructure):
         """
         size = read_7bit_encoded_int_from_stream(stream=stream)
         self.size = size
-        self.value = ctypes.c_wchar_p(stream.read(size).decode('utf-8'))
+        self.value = stream.read(size)
 
 
 class PrimitiveValue(ctypes.Structure):

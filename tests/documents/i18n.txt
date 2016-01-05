@@ -1,0 +1,10 @@
+1,0=>'Merchant1'
+1,1=>''
+5,2=>'::A short man rises from behind his desk (a6166da1-2d55-4af3-9ced-ab4c6a05fa8a)'
+5,7=>'::A short man rises from behind his desk with a grenade case in his hands. The heavy case meets the top of the desk with a thud, raising your eyebrows, which in turn makes the man's face turn into a smile. He removes his glove and shakes your hand with a strong, perhaps too strong grip before addressing you.::
+
+Don't worry. $(context.player.Name), I ain't gonna blow us up. Nope. Anyway, Vencel told me you'll be staying with us for a while.'
+6,3=>'Everyone's talking about Tanner's disapp (90c5f601-5ffd-412d-963d-d7d186e2b7a4)*'
+6,8=>'Everyone's talking about Tanner's disappearance, while they should be talking about yours. Where have you been all this time, $(#lad/lass). You came here to restock, eh?'
+91,2=>'ammo\bolt'
+91,3=>'Тут немного юникода'

@@ -7,7 +7,6 @@
 .. sectionauthor:: Nickolas Fox <tarvitz@blacklibary.ru>
 """
 from __future__ import unicode_literals
-
 import ctypes
 from struct import unpack, pack
 from ctypes import (
@@ -21,6 +20,10 @@ from .base import SimpleSerializerMixin
 from . import records
 from .utils import read_record_type
 from .. import enums
+from ..utils.i18n import get_i18n_items
+
+import logging
+logger = logging.getLogger('udlg')
 
 SAFE_SIZES = [
     c_uint64, c_byte, c_uint32
@@ -219,6 +222,29 @@ class UDLGFile(SimpleSerializerMixin, ctypes.Structure):
                 if isinstance(member, records.BinaryObjectString):
                     content = member.value.value
                     append(
-                        b"%i,%i=>%s" % (idx, jdx, content.encode('utf-8'))
+                        b"%i,%i=>'%s'" % (idx, jdx, content.encode('utf-8'))
                     )
         return b"\n".join(i18n)
+
+    def load_i18n(self, block):
+        """
+        ``raw`` process
+        load i18n file
+
+        :param bytes block: block to process
+        :rtype: None
+        :return: None
+        """
+        entry_records = self.data.records
+        i18n_items = get_i18n_items(block)
+        for record_id, record in i18n_items.items():
+            for member_id, locale in record.items():
+                entry = entry_records[record_id].members[member_id]
+                if not isinstance(entry, records.BinaryObjectString):
+                    logger.warning(
+                        "Entry with id: (%i, %i) skipped, as original "
+                        "file has no proper content type with it",
+                        record_id, member_id
+                    )
+                    continue
+                entry.set(locale)

@@ -26,7 +26,7 @@ class BinaryFormatterFileTest(TestCase):
                 'entry': {
                     'object_id': 1, 'record_type': 6,
                     'value': {'size': 27,
-                              'value': 'String should be serialized'}},
+                              'value': b'String should be serialized'}},
                 'record_type': 6
             },
             {'entry': {'record_type': 11}, 'record_type': 11}]
@@ -78,7 +78,7 @@ class BinaryFormatterFileTest(TestCase):
         instance = BinaryFormatterFileBuilder.build(stream=self.string_file)
         with allure.step('check records'):
             self.assertEqual(instance.records[0].entry.value.value,
-                             'String should be serialized')
+                             b'String should be serialized')
             self.assertIsInstance(instance.records[1].entry,
                                   records.MessageEnd)
 
@@ -114,9 +114,9 @@ class BinaryFormatterFileTest(TestCase):
                 instance.records[1].entry, records.BinaryObjectString
             )
             entry = instance.records[1].entry
-            self.assertEqual(entry.value.value, "bla")
+            self.assertEqual(entry.value.value, b"bla")
             entry = instance.records[256].entry
-            self.assertEqual(entry.value.value, 'Z' * 130)
+            self.assertEqual(entry.value.value, b'Z' * 130)
         with allure.step('check message end'):
             self.assertIsInstance(instance.records[257].entry,
                                   records.MessageEnd)
@@ -212,7 +212,7 @@ class BinaryFormatterFileTest(TestCase):
             entry = instance.records[1].entry
             self.assertIsInstance(entry, records.ClassWithMembersAndTypes)
             self.assertEqual(entry.class_info.members_count, 15)
-            self.assertEqual(entry.member_list[0].value.value, 'blast')
+            self.assertEqual(entry.member_list[0].value.value, b'blast')
             self.assertIsInstance(entry.member_list[1],
                                   records.MemberReference)
             self.assertIsInstance(entry.member_list[2],
@@ -250,7 +250,7 @@ class BinaryFormatterFileTest(TestCase):
             )
             entry = instance.records[15].entry
             member_types = [records.BinaryObjectString, int, bool]
-            member_values = ["bla-bla-fier", 1340, True]
+            member_values = [b"bla-bla-fier", 1340, True]
             for member, member_type, member_value in zip(
                     entry.get_member_list(), member_types, member_values):
                 self.assertIsInstance(member, member_type)

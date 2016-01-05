@@ -66,6 +66,13 @@ class BinaryObjectString(BinaryRecordStructure):
 
     #: todo make it more pythonic
     def set(self, value):
+        """
+        set string value
+
+        :param str | bytes value: value to store
+        :rtype: None
+        :return: None
+        """
         self.value.set(value)
 
     def __str__(self):
