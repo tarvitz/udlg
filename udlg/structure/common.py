@@ -9,7 +9,9 @@
 from __future__ import unicode_literals
 
 import ctypes
-from ctypes import c_int32, c_uint32, c_void_p, c_ubyte, cast, pointer, POINTER
+from ctypes import (
+    c_int32, c_uint32, c_void_p, c_ubyte, c_wchar_p, cast, pointer, POINTER
+)
 from struct import unpack, pack
 
 from .base import BinaryRecordStructure
@@ -37,6 +39,10 @@ class LengthPrefixedString(BinaryRecordStructure):
         document.extend(pack('%is' % len(size), size))
         document.extend(pack('%is' % self.size, value))
         return document
+
+    def set(self, value):
+        self.value = value
+        self.size = len(value.encode('utf-8'))
 
     def __repr__(self):
         if self.value:

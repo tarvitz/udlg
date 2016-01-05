@@ -29,7 +29,10 @@
 from __future__ import unicode_literals
 
 from struct import unpack, calcsize
-from ctypes import c_int32, c_ubyte, c_uint32, c_void_p, cast, pointer, POINTER
+from ctypes import (
+    c_int32, c_ubyte, c_uint32, c_void_p, c_wchar_p, cast, pointer,
+    POINTER
+)
 
 from .base import BinaryRecordStructure
 from .constants import (
@@ -63,8 +66,7 @@ class BinaryObjectString(BinaryRecordStructure):
 
     #: todo make it more pythonic
     def set(self, value):
-        self.value.value = value
-        self.value.size = len(value)
+        self.value.set(value)
 
     def __str__(self):
         return "'%s'" % (self.value.value or '')

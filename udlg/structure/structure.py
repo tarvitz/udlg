@@ -9,7 +9,7 @@
 from __future__ import unicode_literals
 
 import ctypes
-from struct import unpack
+from struct import unpack, pack
 from ctypes import (
     c_uint32, c_uint64, c_int32, c_byte, c_ubyte,
     POINTER, sizeof, cast,
@@ -163,13 +163,14 @@ class Record(SimpleSerializerMixin, ctypes.Structure):
 
 class UDLGHeader(SimpleSerializerMixin, ctypes.Structure):
     _fields_ = [
-        ('unknown_1', c_uint32),
-        ('unknown_2', c_uint32),
-        ('unknown_3', c_uint32),
-        ('unknown_4', c_uint32),
-        ('unknown_5', c_uint32),
-        ('unknown_6', c_uint32),
+        ('signature', (c_byte * SIGNATURE_SIZE))
     ]
+
+    def to_bin(self):
+        document = bytearray()
+        data = pack('%ib' % SIGNATURE_SIZE, *self.signature[:SIGNATURE_SIZE])
+        document.extend(data)
+        return document
 
 
 class BinaryDataStructureFile(SimpleSerializerMixin, ctypes.Structure):
@@ -198,9 +199,9 @@ class UDLGFile(SimpleSerializerMixin, ctypes.Structure):
 
     def _initiate(self, stream):
         header = UDLGHeader()
-        for i in range(6):
-            data, = unpack('I', stream.read(INT_SIZE))
-            setattr(header, 'unknown_%i' % i, data)
+        data = unpack('%ib' % SIGNATURE_SIZE, stream.read(SIGNATURE_SIZE))
+        signature = (c_byte * SIGNATURE_SIZE)(*data)
+        header.signature = signature
         self.header = header
 
     def unpack_i18n(self):

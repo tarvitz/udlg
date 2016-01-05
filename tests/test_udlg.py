@@ -6,6 +6,7 @@
 .. moduleauthor:: Nickolas Fox <tarvitz@blacklibary.ru>
 .. sectionauthor:: Nickolas Fox <tarvitz@blacklibary.ru>
 """
+import io
 import allure
 from udlg import enums
 from udlg.builder import UDLGBuilder
@@ -48,13 +49,16 @@ class UDLGFileTest(TestCase):
         with allure.step('check records'):
             self.assertEqual(instance.data.count, 96)
 
-    @allure.story('')
+    @allure.story('string modify')
     def test_length_prefixed_string_modify(self):
         instance = UDLGBuilder.build(self.lucas)
         with allure.step('modify string'):
             entry = instance.data.records[5].members[2]
-            entry.set("Another string to set")
+            entry.set("::Another:: string to set. Юникод")
         with allure.step('check'):
             #: still binary object string
             self.assertIsInstance(entry, records.BinaryObjectString)
-            self.assertEqual(entry.value, "Another string to set")
+            self.assertEqual(entry.value, "::Another:: string to set. Юникод")
+            instance_from = UDLGBuilder.build(io.BytesIO(instance.to_bin()))
+            entry = instance_from.data.records[5].members[2]
+            self.assertEqual(entry, "::Another:: string to set. Юникод")
