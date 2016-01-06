@@ -9,6 +9,9 @@ ROOT_DIR = os.path.dirname(os.path.dirname(__file__))
 sys.path.insert(0, ROOT_DIR)
 from udlg.builder import UDLGBuilder
 
+import logging
+logger = logging.getLogger(__file__)
+
 
 def unpack(entry, opts):
     with closing(open(entry.path, 'rb')) as stream:
@@ -24,10 +27,16 @@ def unpack(entry, opts):
 
         if not(opts.skip_processed and os.path.exists(store_path)):
             print("Processing: %s" % entry.path)
-            i18n_block = open(i18n_path, 'rb').read()
+            try:
+                i18n_block = open(i18n_path, 'rb').read()
+            except OSError:
+                logger.error("Can not access i18n file: %s, skipping",
+                             i18n_path)
+                return
             u = UDLGBuilder.build(stream)
             u.load_i18n(i18n_block)
             open(store_path, 'wb').write(u.to_bin())
+
         else:
             print("Skipping: %s" % entry.path)
 
