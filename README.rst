@@ -37,14 +37,22 @@ be achieved.
 
 Dependencies
 ~~~~~~~~~~~~
-* python 3.4
-* (explore.py uses python3.5)
+`Python <https://www.python.org/downloads/>`_
 
-On windows you would need to have lxml package you can take
-`it here <http://www.lfd.uci.edu/~gohlke/pythonlibs/#lxml>`_
+Works on:
+
+- python-3.4
+- python-3.5
+
+Windows, Linux, (probably mac too)
+
+**Would not work** on *python-2.7* and lower
 
 Tests
 -----
+On windows you would need to have lxml package you can take
+`it here <http://www.lfd.uci.edu/~gohlke/pythonlibs/#lxml>`_
+
 There some tests covers utils, helps to maintain python library clean and
 consistence.
 
