@@ -10,7 +10,7 @@ from __future__ import unicode_literals
 
 import ctypes
 from ctypes import (
-    c_int32, c_uint32, c_void_p, c_ubyte, c_wchar_p, cast, pointer, POINTER
+    c_int32, c_uint32, c_void_p, c_ubyte, cast, pointer, POINTER
 )
 from struct import unpack, pack
 

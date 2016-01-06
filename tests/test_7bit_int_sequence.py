@@ -17,7 +17,7 @@ from unittest import TestCase
 class StringLengthTest(TestCase):
     def setUp(self):
         self.map = {
-            '10':  b'\x0a',
+            '10': b'\x0a',
             '127': b'\x7f',
             '128': b'\x80\x01',
             '256': b'\x80\x02',

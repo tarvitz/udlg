@@ -10,6 +10,7 @@ from struct import unpack, pack, calcsize
 from ctypes import Structure, cast, pointer, c_void_p, _SimpleCData, _Pointer
 from .constants import PrimitiveTypeConversionSet
 
+
 class SimpleSerializerMixin(object):
     """
     Very basic and dumb serializer :), please do not count on it too much.
