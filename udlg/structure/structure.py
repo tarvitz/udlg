@@ -239,14 +239,14 @@ class UDLGFile(SimpleSerializerMixin, ctypes.Structure):
         :rtype: None
         :return: None
         """
-        i18n_items = get_i18n_items(block)
+        #: todo fix it
         #: super dirty hack overwise set data would wipe/vanish/free
-        self._cache = {}
+        self._cache = []
+        cache_append = self._cache.append
 
-        for record_id, record in i18n_items.items():
+        for record_id, record in get_i18n_items(block).items():
             for member_id, locale in record.items():
                 entry = self.data.records[record_id].members[member_id]
-                entry_id = id(entry)
                 if not isinstance(entry, records.BinaryObjectString):
                     logger.warning(
                         "Entry with id: (%i, %i) skipped, as original "
@@ -254,5 +254,6 @@ class UDLGFile(SimpleSerializerMixin, ctypes.Structure):
                         record_id, member_id
                     )
                     continue
-                self._cache[entry_id] = entry
-                self._cache[entry_id].set(locale)
+                entry.set(locale)
+                #: prevent LengthPrefixedString from freeing
+                cache_append(entry.value)

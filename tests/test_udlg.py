@@ -26,6 +26,7 @@ class UDLGFileTest(TestCase):
     def tearDown(self):
         self.cc_dog_in_motion.close()
         self.lucas.close()
+        self.lucas_i18n.close()
 
     @allure.story('udlg')
     def test_cc_dog_in_motion(self):
@@ -111,3 +112,43 @@ class UDLGFileTest(TestCase):
                 u'::Fuck:: Что за чёрт? Пойду я отсюда. '
                 u'go-go-go.'.encode('utf-8')
             )
+
+
+class PointersTest(TestCase):
+    def setUp(self):
+        self.lucas = open('tests/documents/Lucas1.udlg', 'rb')
+        self.lucas_i18n = open('tests/documents/Lucas1.txt', 'rb')
+
+    def tearDown(self):
+        self.lucas.close()
+        self.lucas_i18n.close()
+
+    def test_load_i18n(self):
+        instance = UDLGBuilder.build(self.lucas)
+
+        block = self.lucas_i18n.read()
+        instance.load_i18n(block)
+
+        self.assertEqual(
+            instance.data.records[30].members[3],
+            u"::I:: gotta go actually. "
+            u"(d6012f9c-fe53-48b6-bffb-b20d10ff86bc)".encode('utf-8')
+        )
+        self.assertEqual(
+            instance.data.records[30].members[7],
+            u'::Fuck:: Что за чёрт? Пойду я отсюда. '
+            u'go-go-go.'.encode('utf-8')
+        )
+
+        stream = io.BytesIO(instance.to_bin())
+        instance = UDLGBuilder.build(stream=stream)
+        self.assertEqual(
+            instance.data.records[30].members[3],
+            u"::I:: gotta go actually. "
+            u"(d6012f9c-fe53-48b6-bffb-b20d10ff86bc)".encode('utf-8')
+        )
+        self.assertEqual(
+            instance.data.records[30].members[7],
+            u'::Fuck:: Что за чёрт? Пойду я отсюда. '
+            u'go-go-go.'.encode('utf-8')
+        )
