@@ -34,17 +34,17 @@ class LengthPrefixedString(BinaryRecordStructure):
 
     def to_bin(self):
         document = bytearray()
-        value = bytes(self.value)
-        size = write_7bit_int(self.size)
-        document.extend(pack('%is' % len(size), size))
-        document.extend(pack('%is' % self.size, value))
+        size_string = write_7bit_int(self.size)
+        document.extend(pack('%is' % len(size_string), size_string))
+        document.extend(pack('%is' % self.size, self.value))
         return document
 
     def set(self, value):
+        if isinstance(value, str):
+            value = value.encode('utf-8')
+
         if self.value != value:
-            if isinstance(value, str):
-                value = value.encode('utf-8')
-            self.value = value
+            self.value = ctypes.c_char_p(value)
             self.size = len(value)
 
     def __repr__(self):

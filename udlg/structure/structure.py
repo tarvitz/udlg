@@ -200,6 +200,10 @@ class UDLGFile(SimpleSerializerMixin, ctypes.Structure):
         ('data', BinaryDataStructureFile)
     ]
 
+    @property
+    def records(self):
+        return self.data.records
+
     def _initiate(self, stream):
         header = UDLGHeader()
         data = unpack('%ib' % SIGNATURE_SIZE, stream.read(SIGNATURE_SIZE))
@@ -235,11 +239,14 @@ class UDLGFile(SimpleSerializerMixin, ctypes.Structure):
         :rtype: None
         :return: None
         """
-        entry_records = self.data.records
         i18n_items = get_i18n_items(block)
+        #: super dirty hack overwise set data would wipe/vanish/free
+        self._cache = {}
+
         for record_id, record in i18n_items.items():
             for member_id, locale in record.items():
-                entry = entry_records[record_id].members[member_id]
+                entry = self.data.records[record_id].members[member_id]
+                entry_id = id(entry)
                 if not isinstance(entry, records.BinaryObjectString):
                     logger.warning(
                         "Entry with id: (%i, %i) skipped, as original "
@@ -247,4 +254,5 @@ class UDLGFile(SimpleSerializerMixin, ctypes.Structure):
                         record_id, member_id
                     )
                     continue
-                entry.set(locale)
+                self._cache[entry_id] = entry
+                self._cache[entry_id].set(locale)

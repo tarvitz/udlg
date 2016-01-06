@@ -98,3 +98,16 @@ class UDLGFileTest(TestCase):
                     u'::Fuck:: Что за чёрт? Пойду я отсюда. '
                     u'go-go-go.'.encode('utf-8')
                 )
+        with allure.step('check it once more'):
+            stream = io.BytesIO(instance.to_bin())
+            instance = UDLGBuilder.build(stream=stream)
+            self.assertEqual(
+                instance.data.records[30].members[3],
+                u"::I:: gotta go actually. "
+                u"(d6012f9c-fe53-48b6-bffb-b20d10ff86bc)".encode('utf-8')
+            )
+            self.assertEqual(
+                instance.data.records[30].members[7],
+                u'::Fuck:: Что за чёрт? Пойду я отсюда. '
+                u'go-go-go.'.encode('utf-8')
+            )
