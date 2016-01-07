@@ -1,4 +1,6 @@
 #!/usr/bin/env python3.5
+from hashlib import md5
+import json
 import sys
 import os
 import argparse
@@ -13,7 +15,7 @@ import logging
 logger = logging.getLogger(__file__)
 
 
-def unpack(entry, opts):
+def apply(entry, cache, opts):
     with closing(open(entry.path, 'rb')) as stream:
         store_path = os.path.join(
             opts.output_dir, entry.path.split(opts.dialogs_dir)[-1][1:]
@@ -25,31 +27,33 @@ def unpack(entry, opts):
         if not os.path.exists(store_entry_path):
             os.makedirs(store_entry_path)
 
-        if not(opts.skip_processed and os.path.exists(store_path)):
+        try:
+            i18n_block = open(i18n_path, 'rb').read()
+        except OSError:
+            logger.error("Can not access i18n file: %s, skipping",
+                         i18n_path)
+            return
+        i18n_cache_digest = md5(i18n_block).hexdigest()
+        if cache.get(i18n_path, '') != i18n_cache_digest:
             print("Processing: %s" % entry.path)
-            try:
-                i18n_block = open(i18n_path, 'rb').read()
-            except OSError:
-                logger.error("Can not access i18n file: %s, skipping",
-                             i18n_path)
-                return
             u = UDLGBuilder.build(stream)
             u.load_i18n(i18n_block)
             open(store_path, 'wb').write(u.to_bin())
-
         else:
-            print("Skipping: %s" % entry.path)
+            print("Skipping `%s`, already processed" % entry.path)
+        cache[i18n_path] = i18n_cache_digest
 
 
-def process(opts, path=None):
+def process(opts, i18n_cache, path=None):
     path = path or opts.dialogs_dir
+
     for entry in os.scandir(path):
         if entry.is_dir():
-            process(opts, path=entry.path)
+            process(opts, i18n_cache, path=entry.path)
         else:
             if not entry.name.endswith('.udlg'):
                 continue
-            unpack(entry, opts)
+            apply(entry, i18n_cache, opts)
 
 
 if __name__ == '__main__':
@@ -67,4 +71,11 @@ if __name__ == '__main__':
                         help='do not process files already had been processed',
                         action='store_true', required=False, default=False)
     arguments = parser.parse_args()
-    process(arguments)
+
+    i18n_cache_path = os.path.join(arguments.i18n_dir, 'cache.json')
+    if os.path.exists(i18n_cache_path):
+        i18n_cache = json.loads(open(i18n_cache_path, 'r').read())
+    else:
+        i18n_cache = {}
+    process(arguments, i18n_cache)
+    open(i18n_cache_path, 'w').write(json.dumps(i18n_cache))
