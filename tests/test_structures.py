@@ -131,7 +131,7 @@ class VoidPointerInTest(TestCase):
         with allure.step('check'):
             self.assertEqual(instance.entry.contents.name, b"simple")
             self.assertEqual(instance.entry.contents.length, 6)
-            with allure.step('unpack void ptr'):
+            with allure.step('apply void ptr'):
                 #: recast void pointer from structure to our pointer type
                 super_entry = cast(instance.super_entry, POINTER(Simple))
                 self.assertEqual(super_entry.contents.name, b'super entry')
