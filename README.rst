@@ -2,9 +2,18 @@ UDLG
 ====
 
 * UDLG is dialogs file format using in `Underrail <http://store.steampowered.com/app/250520/>`_ game.
+You can use this tiny and small library to extract dialogs from *.udlg files and store your version into them.
+
+Please see for scripts directory content for that purpose.
+Apparently you'd be available to make simple translation for the game for any language that supports UTF-8.
 
 .. contents:: :local:
     :depth: 2
+
+.. note::
+
+    This library isn't under maintenance. Though it could work with the latest version of udlg files and Underrail game itself.
+    Please don't rely too much on current codebase ;)
 
 File format specs
 -----------------
@@ -19,16 +28,15 @@ help in investigation udlg file format process.
 Use `010editor <http://www.sweetscape.com/010editor/>`_ to process udlg files
 with given templates.
 
-Roadmap
--------
-- Extract and store translations into *.udlg files
-
 Library
 -------
-UDLG file support will be implement as `Python <https://www.python.org/>`_
-application and available across
-`PyPI <https://pypi.python.org/pypi>`_ as soon as first roadmap would
-be achieved.
+Simple support for extracting dialogs data and the way to store it already implemented.
+No further actions will needed after translation is done.
+
+Here you can see translation topic. http://www.zoneofgames.ru/forum/index.php?showtopic=33279 (discussion goes in russian)
+
+Installation
+------------
 
 .. code-block:: bash
    user@localhost$ virtualenv --no-site-packages venv3 --python=python3.4
@@ -44,7 +52,7 @@ Works on:
 - python-3.4
 - python-3.5
 
-Windows, Linux, (probably mac too)
+Windows, Linux, (probably Mac too)
 
 **Would not work** on *python-2.7* and lower
 
