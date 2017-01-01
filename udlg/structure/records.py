@@ -28,7 +28,7 @@
 
 from __future__ import unicode_literals
 
-from struct import unpack, calcsize
+from struct import unpack, pack, calcsize
 from ctypes import (
     c_int32, c_ubyte, c_uint32, c_void_p, cast, pointer,
     POINTER
@@ -505,6 +505,33 @@ class BinaryArray(BinaryRecordStructure):
         else:
             raise TypeError("Wrong binary array type: %i" % self.type)
         self.additional_type_info = additional_type_info
+
+    def to_bin(self):
+        #: todo: my god that's ugly the all method
+        contents = bytearray()
+        extend = contents.extend
+        extend(pack('b', self.record_type))
+        extend(pack('i', self.object_id))
+        extend(pack('b', self.binary_type))
+        extend(pack('i', self.rank))
+
+        lengths = pack(
+            '%i%s' % (self.rank, self.lengths._type_._type_),
+            *self.lengths[:self.rank]
+        )
+        extend(lengths)
+        lower_bounds = b''
+        if self.binary_type in (enums.BinaryArrayTypeEnum.SingleOffset,
+                                enums.BinaryArrayTypeEnum.JaggedOffset,
+                                enums.BinaryArrayTypeEnum.RectangularOffset):
+            lower_bounds = pack(
+                '%i%s' % (self.rank, self.lower_bounds._type_._type_),
+                *self.lengths[:self.rank]
+            )
+        extend(lower_bounds)
+        extend(pack('b', self.type))
+        extend(self.additional_type_info.value.to_bin())
+        return contents
 
 
 class MemberPrimitiveTyped(BinaryRecordStructure):

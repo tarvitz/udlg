@@ -11,4 +11,6 @@ dialogs.json
 /.cache
 /.tox
 /.coverage
-
+/ve3[456]
+/htmlcov
+/db
