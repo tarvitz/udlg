@@ -616,6 +616,3 @@ class ObjectNullMultiple(BinaryRecordStructure):
         ('record_type', RecordTypeEnum),
         ('count', c_int32)
     ]
-
-    def _initiate(self, stream):
-        raise NotImplementedError("Yet not implemented")
