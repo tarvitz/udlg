@@ -8,6 +8,7 @@
 """
 from __future__ import unicode_literals
 import ctypes
+
 from struct import unpack, pack
 from ctypes import (
     c_uint32, c_uint64, c_int32, c_byte, c_ubyte,
@@ -17,10 +18,10 @@ from .constants import (
     BYTE_SIZE, INT_SIZE, RecordTypeEnum
 )
 from .base import SimpleSerializerMixin
-from . import records
-from .utils import read_record_type
+from . import records, mixins
+from . utils import read_record_type
 from .. import enums
-from ..utils.i18n import get_i18n_items
+from .. utils.i18n import get_i18n_items
 
 import logging
 logger = logging.getLogger('udlg')
@@ -35,7 +36,9 @@ def safe_size_of(c_type):
     return c_type in SAFE_SIZES and sizeof(c_type) or 0
 
 
-class SerializationHeader(SimpleSerializerMixin, ctypes.Structure):
+class SerializationHeader(SimpleSerializerMixin,
+                          mixins.StructureExtendMixin,
+                          ctypes.Structure):
     _fields_ = [
         #: enums.RecordTypeEnum
         ('record_type', c_ubyte),
@@ -45,7 +48,7 @@ class SerializationHeader(SimpleSerializerMixin, ctypes.Structure):
         ('minor_version', c_int32)
     ]
 
-    def _initiate(self, stream):
+    def _initiate(self, stream, seek=None):
         """
         initiate instance fields (construct) from stream
 
@@ -58,6 +61,9 @@ class SerializationHeader(SimpleSerializerMixin, ctypes.Structure):
         :rtype: None
         :return: None
         """
+        if seek is not None:
+            stream.seek(seek)
+
         record_type, = unpack('b', stream.read(BYTE_SIZE))
         root_id, header_id, major_version, minor_version = unpack(
             '4i', stream.read(INT_SIZE * 4)
