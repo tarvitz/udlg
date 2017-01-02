@@ -15,3 +15,4 @@ dialogs.json
 /htmlcov
 /db
 /docker/cs/*.exe
+/health.json
