@@ -14,3 +14,4 @@ dialogs.json
 /ve3[456]
 /htmlcov
 /db
+/docker/cs/*.exe

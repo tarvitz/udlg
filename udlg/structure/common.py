@@ -339,10 +339,15 @@ class MemberTypeInfo(BinaryRecordStructure):
                 )
                 entry = LengthPrefixedString()
                 entry._initiate(stream)
-            else:
+            elif bin_type in (enums.BinaryTypeEnum.StringArray,
+                              enums.BinaryTypeEnum.ObjectArray,
+                              enums.BinaryTypeEnum.Object,
+                              enums.BinaryTypeEnum.String):
                 additional_info = AdditionalInfo(
                     type=enums.AdditionalInfoTypeEnum.Null
                 )
+            else:
+                raise TypeError("Wrong binary type passed: `%s`" % bin_type)
             additional_info.assign_entry(entry)
             append(additional_info)
         self.additional_info = (
